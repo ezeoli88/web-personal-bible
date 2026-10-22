@@ -8,7 +8,7 @@ import { readOidcTransaction } from "../../worker/auth/session";
 import { OIDC_COOKIE, readCookie, SESSION_COOKIE } from "../../worker/lib/cookies";
 import { MAX_AI_BODY_BYTES } from "../../worker/lib/http";
 
-const HOST = "https://biblia-web.ekiolivier.workers.dev";
+const HOST = "https://biblia-web.ezeo-cloud.workers.dev";
 const ISSUER = "https://team.cloudflareaccess.com/cdn-cgi/access/sso/oidc/test-client";
 const ADMIN = "ekiolivier@gmail.com";
 

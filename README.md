@@ -69,7 +69,7 @@ Estos valores no son secretos:
 
 Callbacks ya configurados en la aplicación SaaS de Access:
 
-- `https://biblia-web.ekiolivier.workers.dev/auth/callback`
+- `https://biblia-web.ezeo-cloud.workers.dev/auth/callback`
 - `http://localhost:5173/auth/callback`
 
 ## Secretos

@@ -24,7 +24,7 @@ El objetivo es un **cliente web** con el mismo diseño y la misma lógica, adapt
 ### Decisiones tomadas
 | Tema | Decisión |
 |---|---|
-| Hosting | Worker `biblia-web` con Static Assets en **workers.dev** (`biblia-web.ekiolivier.workers.dev`), sin dominio propio |
+| Hosting | Worker `biblia-web` con Static Assets en **workers.dev** (`biblia-web.ezeo-cloud.workers.dev`), sin dominio propio |
 | Stack | Vite + React 19 + **TanStack Router** (file-based) + **TanStack Query** v5, SPA, `@cloudflare/vite-plugin` |
 | Layout | Mismo diseño, **adaptado a escritorio**: barra lateral desde 1024 px y columna de lectura centrada |
 | Reutilización | **Copiar** los módulos TS puros de la app a `biblia-web/src/core/` (cada proyecto tiene su propio git) |
@@ -47,7 +47,7 @@ El objetivo es un **cliente web** con el mismo diseño y la misma lógica, adapt
 ## Arquitectura
 
 ```
-Navegador ──► biblia-web.ekiolivier.workers.dev  (público)
+Navegador ──► biblia-web.ezeo-cloud.workers.dev  (público)
    Worker biblia-web
      ├─ /auth/login     → redirige a Access (OIDC: code + PKCE + state + nonce)
      ├─ /auth/callback  → canjea el code, verifica el id_token, chequea la whitelist en D1 → cookie de sesión
@@ -341,7 +341,7 @@ Cada archivo copiado lleva el comentario `// Ported from biblia-ntv-app/src/...`
 2. **Zero Trust.** Crear la organización si no existe (plan gratis) y activar **One-time PIN** en Integrations → Identity providers.
 3. **Política reutilizable** "biblia-ia-whitelist": Allow → Include → Emails → **`ekiolivier@gmail.com`**. Anotar su ID en `ACCESS_POLICY_ID`. Desde ahí, la mantiene sincronizada `/admin`.
 4. **Aplicación SaaS de Access (OIDC):** Access controls → Applications → Create → SaaS application → OIDC.
-   - Redirect URL: `https://biblia-web.ekiolivier.workers.dev/auth/callback`. Si Access acepta `http://localhost:5173/auth/callback`, agregarla también; si no, se usa el bypass de desarrollo.
+   - Redirect URL: `https://biblia-web.ezeo-cloud.workers.dev/auth/callback`. Si Access acepta `http://localhost:5173/auth/callback`, agregarla también; si no, se usa el bypass de desarrollo.
    - Scopes `openid` y `email`. **PKCE activado**.
    - Login methods: solo One-time PIN, con *instant authentication*.
    - Política: "biblia-ia-whitelist".
