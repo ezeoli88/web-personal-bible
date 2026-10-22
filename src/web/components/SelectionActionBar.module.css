@@ -5,6 +5,7 @@
   flex-direction: column;
   gap: var(--space-s);
   padding: var(--space-m);
+  padding-bottom: calc(var(--space-m) + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--color-border);
   background: var(--color-surface);
 }

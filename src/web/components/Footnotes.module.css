@@ -3,6 +3,9 @@
   max-height: 60vh;
   margin: auto auto 0;
   padding: 0 var(--space-m) var(--space-m);
+  padding-bottom: calc(var(--space-m) + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(var(--space-m) + env(safe-area-inset-left, 0px));
+  padding-right: calc(var(--space-m) + env(safe-area-inset-right, 0px));
   border: 0;
   border-radius: var(--radius-l) var(--radius-l) 0 0;
   background: var(--color-background);
