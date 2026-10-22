@@ -10,6 +10,7 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { TranslationSelector } from "../components/TranslationSelector";
 import { BookFilterProvider, useBookFilter } from "./bookFilter";
 import { crumbsFor, logicalParent } from "./paths";
+import { InstallAppButton } from "../pwa/InstallAppButton";
 import styles from "./AppShell.module.css";
 
 function ShellFrame({ children }: { children: ReactNode }) {
@@ -71,6 +72,7 @@ function ShellFrame({ children }: { children: ReactNode }) {
             />
           ))}
         </nav>
+        <InstallAppButton />
         <AccountBox status={auth.status} email={auth.email} role={auth.role} returnTo={href} />
       </aside>
       <div className={styles.main}>
@@ -81,7 +83,10 @@ function ShellFrame({ children }: { children: ReactNode }) {
             </button>
           ) : <span />}
           <h1 className={styles.topTitle}>{title}</h1>
-          <AccountBox status={auth.status} email={auth.email} role={auth.role} returnTo={href} />
+          <div className={styles.topActions}>
+            <InstallAppButton />
+            <AccountBox status={auth.status} email={auth.email} role={auth.role} returnTo={href} />
+          </div>
         </header>
         <nav className={styles.crumbs} aria-label="Migas de pan">
           {crumbs.map((crumb, index) => (

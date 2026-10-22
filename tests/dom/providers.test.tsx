@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { DatabaseProvider, useBibleRepository } from "../../src/core/hooks/DatabaseProvider";
 import { ThemeProvider, useTheme } from "../../src/core/providers/ThemeProvider";
+import { darkTheme, lightTheme } from "../../src/core/theme";
 import { createAppQueryClient } from "../../src/core/providers/QueryProvider";
 import { ThemeToggle } from "../../src/web/components/ThemeToggle";
 
@@ -46,10 +47,12 @@ describe("ThemeProvider", () => {
     );
     expect(screen.getByText("dark")).toBeInTheDocument();
     expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute("content")).toBe(darkTheme.colors.background);
     await user.click(screen.getByTestId("theme-toggle"));
     expect(screen.getByText("light")).toBeInTheDocument();
     expect(localStorage.getItem("theme-mode")).toBe("light");
     expect(document.documentElement.dataset.theme).toBe("light");
+    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute("content")).toBe(lightTheme.colors.background);
   });
 });
 

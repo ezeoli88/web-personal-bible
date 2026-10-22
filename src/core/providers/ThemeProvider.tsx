@@ -26,6 +26,16 @@ function readInitialMode(): ThemeMode {
 function applyTheme(mode: ThemeMode) {
   if (typeof document === "undefined") return;
   document.documentElement.dataset.theme = mode;
+  const color = getTheme(mode).colors.background;
+  const metas = document.head.querySelectorAll('meta[name="theme-color"]');
+  if (metas.length === 0) {
+    const meta = document.createElement("meta");
+    meta.setAttribute("name", "theme-color");
+    meta.setAttribute("content", color);
+    document.head.appendChild(meta);
+    return;
+  }
+  metas.forEach((meta) => meta.setAttribute("content", color));
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

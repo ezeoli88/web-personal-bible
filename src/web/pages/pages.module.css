@@ -9,7 +9,7 @@
   grid-template-columns: repeat(5, 56px);
   justify-content: center;
   gap: var(--space-s);
-  padding-bottom: 96px;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
 }
 .verseNumber {
   width: 56px;
@@ -24,7 +24,7 @@
 }
 .floating {
   position: sticky;
-  bottom: var(--space-m);
+  bottom: calc(var(--space-m) + env(safe-area-inset-bottom, 0px));
   display: block;
   width: 100%;
   margin-top: var(--space-m);
@@ -45,7 +45,7 @@
   line-height: 16px;
   text-align: center;
 }
-.withBar { padding-bottom: 120px; }
+.withBar { padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
 
 @media (min-width: 1024px) {
   .mobileHeader, .mobileList { display: none; }

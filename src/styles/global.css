@@ -3,7 +3,10 @@
 
 * { box-sizing: border-box; }
 
-html, body, #root { min-height: 100%; }
+html, body, #root {
+  min-height: 100%;
+  min-height: 100dvh;
+}
 
 body {
   margin: 0;
