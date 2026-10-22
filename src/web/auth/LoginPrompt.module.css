@@ -1,0 +1,25 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-m);
+  padding: var(--space-l) var(--space-m);
+  text-align: center;
+}
+
+.message {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-body-size);
+}
+
+.button {
+  border: 0;
+  border-radius: var(--radius-m);
+  background: var(--color-primary);
+  color: var(--color-onPrimary);
+  font: inherit;
+  font-weight: 600;
+  padding: var(--space-s) var(--space-m);
+  cursor: pointer;
+}

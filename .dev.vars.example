@@ -1,0 +1,8 @@
+# Local only. Copy to .dev.vars. Never commit .dev.vars and never put real secrets here.
+# The bypass works only when DEV_AUTH_BYPASS=true AND the host is localhost.
+DEV_AUTH_BYPASS=true
+DEV_USER_EMAIL=ekiolivier@gmail.com
+ADMIN_EMAIL=ekiolivier@gmail.com
+SESSION_SECRET=local-only-session-secret-change-me-32b
+OIDC_CLIENT_SECRET=local-only-not-used-with-bypass
+CF_API_TOKEN=local-only-not-a-real-token

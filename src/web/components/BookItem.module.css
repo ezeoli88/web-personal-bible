@@ -1,0 +1,25 @@
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-m);
+  border: 0;
+  border-bottom: 1px solid var(--color-surface);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.content { display: flex; flex-direction: column; gap: 4px; }
+.name { font-size: var(--font-subtitle-size); font-weight: var(--font-subtitle-weight); color: var(--color-text); }
+.testament { font-size: var(--font-caption-size); color: var(--color-textTertiary); }
+.caret {
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid var(--color-textTertiary);
+  border-right: 2px solid var(--color-textTertiary);
+  transform: rotate(45deg);
+}

@@ -1,0 +1,23 @@
+import { MAX_AI_VERSES } from "../../core/lib/passageBuilder";
+import styles from "./SelectionActionBar.module.css";
+
+interface Props {
+  count: number;
+  maxCount?: number;
+  onAskAI: () => void;
+  onCancel: () => void;
+}
+
+export function SelectionActionBar({ count, maxCount = MAX_AI_VERSES, onAskAI, onCancel }: Props) {
+  return (
+    <div className={styles.container} data-testid="selection-action-bar">
+      <p className={styles.countText}>
+        {count}/{maxCount} versículo{count === 1 ? "" : "s"}
+      </p>
+      <div className={styles.actions}>
+        <button type="button" className={styles.cancelButton} onClick={onCancel}>Cancelar</button>
+        <button type="button" className={styles.aiButton} onClick={onAskAI}>Preguntarle a la IA</button>
+      </div>
+    </div>
+  );
+}

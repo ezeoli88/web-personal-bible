@@ -1,0 +1,8 @@
+.text { font-size: 16px; line-height: 26px; color: var(--color-text); white-space: pre-wrap; }
+.bold { font-weight: 700; }
+.italic { font-style: italic; }
+.heading { font-weight: 700; color: var(--color-primary); }
+.h1 { font-size: 22px; }
+.h2 { font-size: 20px; }
+.h3 { font-size: 18px; }
+.h4 { font-size: 16px; }
