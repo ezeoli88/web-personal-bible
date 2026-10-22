@@ -67,6 +67,21 @@ describe("web manifest", () => {
   });
 });
 
+describe("app icon", () => {
+  const icon = readFileSync(new URL("../../public/icons/icon.svg", import.meta.url), "utf8");
+  const favicon = readFileSync(new URL("../../public/favicon.svg", import.meta.url), "utf8");
+
+  it("draws an open bible on the theme blue", () => {
+    expect(icon).toContain('<rect id="plate" width="32" height="32" fill="#1a73e8"/>');
+    expect(icon).not.toContain('rx="6"');
+    expect(icon).toContain('id="open-bible"');
+    expect(icon.match(/<path /g)?.length).toBe(5);
+    expect(favicon).toContain('<rect id="plate" width="32" height="32" rx="6" fill="#1a73e8"/>');
+    const book = (svg: string) => svg.slice(svg.indexOf('<g id="open-bible">'));
+    expect(book(favicon)).toBe(book(icon));
+  });
+});
+
 describe("installable document", () => {
   const html = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
   const shell = readFileSync(new URL("../../src/web/layout/AppShell.module.css", import.meta.url), "utf8");

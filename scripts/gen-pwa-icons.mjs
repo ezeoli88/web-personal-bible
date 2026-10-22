@@ -1,33 +1,17 @@
 import { deflateSync } from "node:zlib";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Resvg } from "@resvg/resvg-js";
 
-const BLUE = [26, 115, 232];
-const WHITE = [255, 255, 255];
+const BLUE = [0x1a, 0x73, 0xe8];
+const BLUE_CSS = "#1a73e8";
 
-// Favicon geometry in a 32px grid: open page, rounded top-right, curled bottom-left.
-const BOOK = [
-  [9, 7],
-  [19, 7],
-  [21, 7.54],
-  [22.46, 9],
-  [23, 11],
-  [23, 25],
-  [13, 25],
-  [11.97, 25.14],
-  [11, 25.54],
-  [10.17, 26.17],
-  [9.54, 27],
-  [9.14, 27.96],
-  [9, 29],
-];
-
-const LINES = [
-  [11, 12, 19, 12],
-  [11, 16, 19, 16],
-  [11, 20, 16, 20],
-];
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const sourcePath = join(root, "public", "icons", "icon.svg");
+const OPENING = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">';
+const PLATE = '<rect id="plate" width="32" height="32" fill="#1a73e8"/>';
+const FAVICON_PLATE = '<rect id="plate" width="32" height="32" rx="6" fill="#1a73e8"/>';
 
 function crc32(buf) {
   let c = 0xffffffff;
@@ -68,82 +52,64 @@ function encodePng(width, height, rgb) {
   ]);
 }
 
-function pointInPoly(x, y, poly) {
-  let inside = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i, i += 1) {
-    const [xi, yi] = poly[i];
-    const [xj, yj] = poly[j];
-    const crosses = (yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-    if (crosses) inside = !inside;
+function rgbaToRgb(size, pixels) {
+  if (pixels.length !== size * size * 4) {
+    throw new Error(`expected ${size * size * 4} RGBA bytes, got ${pixels.length}`);
   }
-  return inside;
-}
-
-function distanceToSegment(px, py, ax, ay, bx, by) {
-  const dx = bx - ax;
-  const dy = by - ay;
-  const lengthSquared = dx * dx + dy * dy;
-  const t = lengthSquared === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lengthSquared));
-  const cx = ax + t * dx;
-  const cy = ay + t * dy;
-  return Math.hypot(px - cx, py - cy);
-}
-
-function sample(u, v) {
-  if (u < 0 || v < 0 || u > 32 || v > 32 || !pointInPoly(u, v, BOOK)) return BLUE;
-  for (const [x1, y1, x2, y2] of LINES) {
-    if (distanceToSegment(u, v, x1, y1, x2, y2) <= 0.72) return BLUE;
-  }
-  return WHITE;
-}
-
-function render(size, scale) {
-  const samples = size >= 512 ? 2 : 4;
   const rgb = Buffer.alloc(size * size * 3);
-  const draw = size * scale;
-  const offset = (size - draw) / 2;
-  const sampleCount = samples * samples;
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      let r = 0;
-      let g = 0;
-      let b = 0;
-      for (let sy = 0; sy < samples; sy += 1) {
-        for (let sx = 0; sx < samples; sx += 1) {
-          const px = x + (sx + 0.5) / samples;
-          const py = y + (sy + 0.5) / samples;
-          const u = ((px - offset) / draw) * 32;
-          const v = ((py - offset) / draw) * 32;
-          const [cr, cg, cb] = sample(u, v);
-          r += cr;
-          g += cg;
-          b += cb;
-        }
-      }
-      const index = (y * size + x) * 3;
-      rgb[index] = Math.round(r / sampleCount);
-      rgb[index + 1] = Math.round(g / sampleCount);
-      rgb[index + 2] = Math.round(b / sampleCount);
-    }
+  for (let i = 0, j = 0; i < pixels.length; i += 4, j += 3) {
+    const alpha = pixels[i + 3] / 255;
+    rgb[j] = Math.round(pixels[i] * alpha + BLUE[0] * (1 - alpha));
+    rgb[j + 1] = Math.round(pixels[i + 1] * alpha + BLUE[1] * (1 - alpha));
+    rgb[j + 2] = Math.round(pixels[i + 2] * alpha + BLUE[2] * (1 - alpha));
   }
-  return encodePng(size, size, rgb);
+  return rgb;
 }
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+function render(svg, size, scale) {
+  const inner = Math.round(size * scale);
+  const offset = Math.floor((size - inner) / 2);
+  if (!svg.includes(OPENING)) throw new Error("public/icons/icon.svg must keep its opening tag");
+  const nested = svg.replace(
+    OPENING,
+    `<svg xmlns="http://www.w3.org/2000/svg" x="${offset}" y="${offset}" width="${inner}" height="${inner}" viewBox="0 0 32 32">`,
+  );
+  const wrapped = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <rect width="${size}" height="${size}" fill="${BLUE_CSS}"/>
+  ${nested}
+</svg>`;
+  const image = new Resvg(wrapped, {
+    fitTo: { mode: "width", value: size },
+    background: BLUE_CSS,
+    shapeRendering: 2,
+    font: { loadSystemFonts: false },
+  }).render();
+  if (image.width !== size || image.height !== size) {
+    throw new Error(`rendered ${image.width}x${image.height}, expected ${size}x${size}`);
+  }
+  return encodePng(size, size, rgbaToRgb(size, image.pixels));
+}
+
+const source = readFileSync(sourcePath, "utf8");
+if (!source.includes(PLATE)) throw new Error("public/icons/icon.svg is missing the full-bleed plate");
+if (!source.includes('id="open-bible"')) throw new Error("public/icons/icon.svg is missing the open-bible mark");
+
 const iconsDir = join(root, "public", "icons");
 mkdirSync(iconsDir, { recursive: true });
+
+writeFileSync(join(root, "public", "favicon.svg"), source.replace(PLATE, FAVICON_PLATE));
+process.stdout.write("wrote public/favicon.svg\n");
 
 const files = [
   ["public/icons/icon-192.png", 192, 1],
   ["public/icons/icon-512.png", 512, 1],
-  // Maskable icons keep the book inside the center circle (about 80% of the canvas).
+  // Maskable icons keep the book inside the center 80% safe circle.
   ["public/icons/icon-maskable-192.png", 192, 0.7],
   ["public/icons/icon-maskable-512.png", 512, 0.7],
   ["public/apple-touch-icon.png", 180, 0.86],
 ];
 
 for (const [relative, size, scale] of files) {
-  const path = join(root, relative);
-  writeFileSync(path, render(size, scale));
+  writeFileSync(join(root, relative), render(source, size, scale));
   process.stdout.write(`wrote ${relative}\n`);
 }
