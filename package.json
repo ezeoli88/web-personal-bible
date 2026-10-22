@@ -1,0 +1,49 @@
+{
+  "name": "biblia-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite",
+    "gen:theme": "tsx scripts/gen-theme-css.ts",
+    "build": "npm run gen:theme && tsc -b && vite build",
+    "deploy": "npm run build && wrangler deploy",
+    "test": "vitest run && vitest run -c vitest.worker.config.ts",
+    "test:unit": "vitest run",
+    "test:worker": "vitest run -c vitest.worker.config.ts",
+    "typecheck": "tsc -b --pretty false",
+    "db:migrate": "wrangler d1 migrations apply biblia-web-db --remote",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.104.5",
+    "@tanstack/react-router": "^1.170.45",
+    "clsx": "^2.1.1",
+    "eventsource-parser": "^4.1.2",
+    "hono": "^4.13.13",
+    "jose": "^6.2.13",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.64.0",
+    "@cloudflare/vitest-plugin": "^1.4.7",
+    "@tanstack/router-plugin": "^1.168.47",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^5.1.4",
+    "jsdom": "^27.0.1",
+    "tsx": "^4.20.6",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.7",
+    "vitest": "^4.1.12",
+    "wrangler": "^4.152.0"
+  }
+}

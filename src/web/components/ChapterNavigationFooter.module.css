@@ -1,0 +1,23 @@
+.container { margin-top: var(--space-xl); }
+.divider { height: 1px; background: var(--color-border); margin-bottom: var(--space-l); }
+.buttonsContainer { display: flex; gap: var(--space-m); }
+.button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+  padding: var(--space-m);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.buttonNext { justify-content: flex-end; }
+.buttonDisabled { opacity: 0.4; cursor: default; }
+.buttonIcon { color: var(--color-primary); font-size: 24px; }
+.buttonTextContainer { display: flex; flex-direction: column; min-width: 0; }
+.textRight { text-align: right; }
+.buttonLabel { font-size: 12px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--color-textSecondary); }
+.buttonChapter { font-size: 14px; font-weight: 600; color: var(--color-primary); }

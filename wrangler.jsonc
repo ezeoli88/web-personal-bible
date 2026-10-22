@@ -1,0 +1,52 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "biblia-web",
+  "account_id": "8096ee9cb07e2778b55e8057e09b23fb",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-10-22",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/auth/*"]
+  },
+  "services": [
+    {
+      "binding": "API",
+      "service": "logosagent-api",
+      // Same Cloudflare account as logosagent-api. `remote` lets `vite dev` call the deployed Worker.
+      "remote": true
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "biblia-web-db",
+      "database_id": "88e62183-a380-4033-98be-d858a9ef0859",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "AI_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 20, "period": 60 }
+    }
+  ],
+  "vars": {
+    "OIDC_ISSUER": "https://ekiolivier.cloudflareaccess.com/cdn-cgi/access/sso/oidc/de08183e9a0a09f85b269f5f83ff9eb105114b48f0f97ea11d546ab9a8783990",
+    "OIDC_CLIENT_ID": "de08183e9a0a09f85b269f5f83ff9eb105114b48f0f97ea11d546ab9a8783990",
+    "CF_ACCOUNT_ID": "8096ee9cb07e2778b55e8057e09b23fb",
+    "ACCESS_POLICY_ID": "79452e7b-87ff-4117-8727-0b9da93c83f6"
+  },
+  "secrets": {
+    "required": ["OIDC_CLIENT_SECRET", "SESSION_SECRET", "ADMIN_EMAIL", "CF_API_TOKEN"]
+  },
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 1 }
+  },
+  "upload_source_maps": true
+}

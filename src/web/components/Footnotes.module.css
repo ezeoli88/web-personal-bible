@@ -1,0 +1,40 @@
+.dialog {
+  width: min(560px, 100%);
+  max-height: 60vh;
+  margin: auto auto 0;
+  padding: 0 var(--space-m) var(--space-m);
+  border: 0;
+  border-radius: var(--radius-l) var(--radius-l) 0 0;
+  background: var(--color-background);
+  color: var(--color-text);
+}
+.dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-m) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.title { margin: 0; font-size: 18px; }
+.close {
+  border: 0;
+  background: transparent;
+  color: var(--color-textSecondary);
+  font-size: 20px;
+  cursor: pointer;
+}
+.content { padding: var(--space-m) 0; overflow: auto; }
+.item { display: flex; gap: var(--space-s); margin-bottom: var(--space-m); }
+.verseLabel { min-width: 32px; color: var(--color-primary); font-size: 12px; font-weight: 700; }
+.text { margin: 0; color: var(--color-textSecondary); font-size: 14px; line-height: 20px; }
+
+@media (min-width: 1024px) {
+  .dialog {
+    width: min(420px, 40vw);
+    max-height: 70vh;
+    margin: 10vh auto auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-l);
+  }
+}

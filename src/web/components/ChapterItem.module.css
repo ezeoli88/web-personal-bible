@@ -1,0 +1,12 @@
+.container {
+  width: 56px;
+  height: 56px;
+  margin: calc(var(--space-s) / 2);
+  border: 0;
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+}
+.number { font-size: 18px; font-weight: 600; }

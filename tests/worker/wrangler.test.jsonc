@@ -1,0 +1,34 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "biblia-web-test",
+  "main": "../../worker/index.ts",
+  "compatibility_date": "2026-10-22",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "biblia-web-db",
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "AI_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 20, "period": 60 }
+    }
+  ],
+  "vars": {
+    "OIDC_ISSUER": "https://team.cloudflareaccess.com/cdn-cgi/access/sso/oidc/test-client",
+    "OIDC_CLIENT_ID": "test-client",
+    "CF_ACCOUNT_ID": "account-test",
+    "ACCESS_POLICY_ID": "policy-test",
+    "OIDC_CLIENT_SECRET": "test-oidc-secret",
+    "SESSION_SECRET": "test-session-secret-at-least-32-bytes",
+    "ADMIN_EMAIL": "ekiolivier@gmail.com",
+    "CF_API_TOKEN": "test-cf-token",
+    "DEV_AUTH_BYPASS": "true",
+    "DEV_USER_EMAIL": "ekiolivier@gmail.com"
+  }
+}

@@ -1,0 +1,63 @@
+:root[data-theme="light"] {
+  --color-background: #ffffff;
+  --color-surface: #f8f9fa;
+  --color-text: #202124;
+  --color-textSecondary: #5f6368;
+  --color-textTertiary: #9aa0a6;
+  --color-border: #dadce0;
+  --color-highlight: #e8f0fe;
+  --color-selection: #dbeafe;
+  --color-primary: #1a73e8;
+  --color-onPrimary: #ffffff;
+  --color-error: #d93025;
+  --space-xs: 4px;
+  --space-s: 8px;
+  --space-m: 16px;
+  --space-l: 24px;
+  --space-xl: 32px;
+  --radius-s: 4px;
+  --radius-m: 8px;
+  --radius-l: 12px;
+  --radius-round: 9999px;
+  --font-title-size: 22px;
+  --font-title-weight: 700;
+  --font-subtitle-size: 18px;
+  --font-subtitle-weight: 600;
+  --font-body-size: 18px;
+  --font-body-line-height: 28px;
+  --font-caption-size: 14px;
+  --font-verse-number-size: 12px;
+  --font-verse-number-weight: 700;
+}
+
+:root[data-theme="dark"] {
+  --color-background: #121417;
+  --color-surface: #1e2126;
+  --color-text: #e8eaed;
+  --color-textSecondary: #9aa0a6;
+  --color-textTertiary: #80868b;
+  --color-border: #3c4043;
+  --color-highlight: #1a3a5c;
+  --color-selection: #234a78;
+  --color-primary: #8ab4f8;
+  --color-onPrimary: #121417;
+  --color-error: #f28b82;
+  --space-xs: 4px;
+  --space-s: 8px;
+  --space-m: 16px;
+  --space-l: 24px;
+  --space-xl: 32px;
+  --radius-s: 4px;
+  --radius-m: 8px;
+  --radius-l: 12px;
+  --radius-round: 9999px;
+  --font-title-size: 22px;
+  --font-title-weight: 700;
+  --font-subtitle-size: 18px;
+  --font-subtitle-weight: 600;
+  --font-body-size: 18px;
+  --font-body-line-height: 28px;
+  --font-caption-size: 14px;
+  --font-verse-number-size: 12px;
+  --font-verse-number-weight: 700;
+}
