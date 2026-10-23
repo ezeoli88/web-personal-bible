@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { bollsHtmlToPlainText, bollsVerseToPlainText } from "../../src/core/lib/bollsText";
-import { buildBiblePassage, buildReference, MAX_AI_VERSES } from "../../src/core/lib/passageBuilder";
+import { buildBiblePassage, buildReference, formatVerseReference, MAX_AI_VERSES } from "../../src/core/lib/passageBuilder";
 import {
   normalizeTranslation,
   isSupportedTranslation,
@@ -40,6 +40,14 @@ describe("passageBuilder", () => {
     expect(buildReference("Juan", 3, [16])).toBe("Juan 3:16");
     expect(buildReference("Juan", 3, [18, 16, 17])).toBe("Juan 3:16-18");
     expect(buildReference("Juan", 3, [16, 18])).toBe("Juan 3:16,18");
+  });
+
+  it("formats display references grouping contiguous runs", () => {
+    expect(formatVerseReference("Juan", 3, [])).toBe("Juan 3");
+    expect(formatVerseReference("Juan", 3, [16])).toBe("Juan 3:16");
+    expect(formatVerseReference("Juan", 3, [18, 16, 17])).toBe("Juan 3:16-18");
+    expect(formatVerseReference("Juan", 3, [16, 18])).toBe("Juan 3:16, 18");
+    expect(formatVerseReference("Juan", 3, [1, 2, 3, 5, 7, 8])).toBe("Juan 3:1-3, 5, 7-8");
   });
 
   it("rejects an empty selection, the verse cap, blank text and another translation", () => {

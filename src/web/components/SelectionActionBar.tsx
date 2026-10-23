@@ -21,8 +21,8 @@ export function SelectionActionBar({ count, maxCount = MAX_AI_VERSES, onAskAI, o
           <button
             type="button"
             className={styles.compareButton}
-            disabled={count !== 1}
-            title={count === 1 ? "Ver este versículo en otras versiones" : "Seleccioná un solo versículo para comparar"}
+            disabled={count === 0}
+            title={count === 1 ? "Ver este versículo en otras versiones" : "Ver estos versículos en otras versiones"}
             onClick={onCompare}
           >
             ⇄ Comparar
