@@ -2,7 +2,12 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { bollsHtmlToPlainText, bollsVerseToPlainText } from "../../src/core/lib/bollsText";
 import { buildBiblePassage, buildReference, MAX_AI_VERSES } from "../../src/core/lib/passageBuilder";
-import { normalizeTranslation, isSupportedTranslation } from "../../src/core/types/translation";
+import {
+  normalizeTranslation,
+  isSupportedTranslation,
+  SUPPORTED_TRANSLATIONS,
+  TRANSLATION_NOTICES,
+} from "../../src/core/types/translation";
 import { darkTheme, getTheme, lightTheme } from "../../src/core/theme";
 import { parseMarkdown } from "../../src/core/lib/markdown";
 import { makeBookId, makeChapterId, makeVerseId, parseBookNumber, parseChapterInfo } from "../../src/core/lib/ids";
@@ -70,6 +75,12 @@ describe("translation", () => {
     expect(normalizeTranslation("no-existe")).toBe("NTV");
     expect(isSupportedTranslation("PDT")).toBe(true);
     expect(isSupportedTranslation("NVI")).toBe(false);
+  });
+
+  it("has a copyright notice for every translation", () => {
+    for (const translation of SUPPORTED_TRANSLATIONS) {
+      expect(TRANSLATION_NOTICES[translation]).toMatch(/^Texto bíblico.+©/);
+    }
   });
 });
 

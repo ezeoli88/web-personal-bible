@@ -11,12 +11,23 @@
 }
 .countText { margin: 0; text-align: center; color: var(--color-textSecondary); font-size: 13px; }
 .actions { display: flex; gap: var(--space-s); }
-.cancelButton, .aiButton {
+.cancelButton, .compareButton, .aiButton {
   border-radius: var(--radius-m);
   padding: var(--space-m);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+}
+.compareButton {
+  flex: 1;
+  background: var(--color-background);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+.compareButton:disabled {
+  color: var(--color-textTertiary);
+  border-color: var(--color-border);
+  cursor: not-allowed;
 }
 .cancelButton {
   flex: 1;

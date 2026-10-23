@@ -27,13 +27,27 @@ export const TRANSLATION_LABELS: Record<BibleTranslation, string> = {
   BTX3: "La Biblia Textual, 3.ª edición",
 };
 
-/** Crédito del texto bíblico, con el titular de los derechos cuando se pudo verificar. */
+/**
+ * Aviso de copyright de cada traducción, tal como lo piden sus titulares. Se
+ * muestra al pie del capítulo y debajo de cada versión en la comparativa.
+ */
 export const TRANSLATION_NOTICES: Record<BibleTranslation, string> = {
-  NTV: "Texto bíblico: Nueva Traducción Viviente (NTV) © Tyndale House Foundation.",
-  LBLA: "Texto bíblico: La Biblia de las Américas (LBLA) © The Lockman Foundation.",
-  RV1960: "Texto bíblico: Reina-Valera 1960 (RV1960).",
+  NTV:
+    "Texto bíblico tomado de la Santa Biblia, Nueva Traducción Viviente, © Tyndale House Foundation, 2010. " +
+    "Usado con permiso de Tyndale House Publishers, Inc. Todos los derechos reservados.",
+  LBLA:
+    "Texto bíblico tomado de La Biblia de las Américas® (LBLA®), Copyright © 1986, 1995, 1997 " +
+    "por The Lockman Foundation. Usado con permiso. www.LBLA.com",
+  RV1960:
+    "Texto bíblico: Reina-Valera 1960 © Sociedades Bíblicas en América Latina, 1960. " +
+    "Renovado © Sociedades Bíblicas Unidas, 1988. Utilizado con permiso.",
+  // TODO(copyright): confirmar el aviso oficial de la Reina Valera Gómez (años y redacción) con su titular.
   RV2004: "Texto bíblico: Reina Valera Gómez (RV2004) © Humberto Gómez Caballero.",
-  PDT: "Texto bíblico: La Palabra de Dios para Todos (PDT) © Bible League International.",
+  // TODO(copyright): confirmar los años del aviso de la PDT con Bible League International.
+  PDT:
+    "Texto bíblico: La Biblia: La Palabra de Dios para Todos (PDT) © 2005, 2008, 2012, 2015 " +
+    "Centro Mundial de Traducción de La Biblia © 2005, 2008, 2012, 2015 Bible League International.",
+  // TODO(copyright): confirmar el aviso oficial de la BTX 3.ª edición (año y redacción) con la Sociedad Bíblica Iberoamericana.
   BTX3: "Texto bíblico: La Biblia Textual, 3.ª edición (BTX3) © Sociedad Bíblica Iberoamericana.",
 };
 

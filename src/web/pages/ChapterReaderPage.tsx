@@ -19,6 +19,7 @@ import { ChapterNavigationFooter } from "../components/ChapterNavigationFooter";
 import { Footnotes } from "../components/Footnotes";
 import { SelectionActionBar } from "../components/SelectionActionBar";
 import { TranslationSelector } from "../components/TranslationSelector";
+import { VerseCompareSheet } from "../components/VerseCompareSheet";
 import { VerseItem } from "../components/VerseItem";
 import type { PanelAccess } from "../hooks/useBibleAiPanel";
 import styles from "./pages.module.css";
@@ -51,6 +52,7 @@ export function ChapterReaderPage({
   const [panelOpen, setPanelOpen] = useState(false);
   const [passage, setPassage] = useState<BiblePassage | null>(null);
   const [footnotesOpen, setFootnotesOpen] = useState(false);
+  const [compareVerse, setCompareVerse] = useState<Verse | null>(null);
   const restored = useRef(false);
 
   const footnotes = verses
@@ -72,6 +74,7 @@ export function ChapterReaderPage({
     setPanelOpen(false);
     setPassage(null);
     setFootnotesOpen(false);
+    setCompareVerse(null);
     restored.current = false;
   }, [chapterId, translation, selection.clearSelection]);
 
@@ -114,7 +117,7 @@ export function ChapterReaderPage({
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
-      if (panelOpen || footnotesOpen) return;
+      if (panelOpen || footnotesOpen || compareVerse) return;
       if (event.altKey || event.metaKey || event.ctrlKey) return;
       const target = event.target;
       if (target instanceof HTMLElement) {
@@ -132,7 +135,7 @@ export function ChapterReaderPage({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [chapterNav, footnotesOpen, goToChapter, panelOpen]);
+  }, [chapterNav, compareVerse, footnotesOpen, goToChapter, panelOpen]);
 
   async function handleAskAI() {
     if (!(await isOnline())) {
@@ -150,6 +153,18 @@ export function ChapterReaderPage({
     } catch (passageError) {
       notify("Selección inválida", passageError instanceof Error ? passageError.message : "Revisá los versículos seleccionados.");
     }
+  }
+
+  function handleCompareSelect(nextTranslation: BibleTranslation) {
+    const verseNumber = compareVerse?.number;
+    setCompareVerse(null);
+    if (nextTranslation === translation) return;
+    void setTranslation(nextTranslation);
+    void navigate({
+      to: "/$book/$chapter",
+      params: { book: slug, chapter: String(chapterNumber) },
+      search: { v: verseNumber },
+    });
   }
 
   function handleLogin() {
@@ -218,9 +233,16 @@ export function ChapterReaderPage({
           count={selection.selectedVerses.length}
           maxCount={selection.maxSelectable}
           onAskAI={() => void handleAskAI()}
+          onCompare={() => setCompareVerse(selection.selectedVerses[0] ?? null)}
           onCancel={selection.clearSelection}
         />
       ) : null}
+      <VerseCompareSheet
+        verse={compareVerse}
+        reference={compareVerse ? `${bookName} ${chapterNumber}:${compareVerse.number}` : ""}
+        onSelectTranslation={handleCompareSelect}
+        onClose={() => setCompareVerse(null)}
+      />
       {panelOpen && passage ? (
         <BibleAiPanel
           open={panelOpen}
