@@ -233,7 +233,7 @@ export function ChapterReaderPage({
           count={selection.selectedVerses.length}
           maxCount={selection.maxSelectable}
           onAskAI={() => void handleAskAI()}
-          onCompare={() => setCompareVerses(selection.selectedVerses)}
+          onCompare={() => setCompareVerses([...selection.selectedVerses].sort((a, b) => a.number - b.number))}
           onCancel={selection.clearSelection}
         />
       ) : null}
