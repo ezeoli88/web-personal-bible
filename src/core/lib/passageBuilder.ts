@@ -39,6 +39,28 @@ export function buildReference(
     : `${bookName} ${chapterNumber}:${sorted.join(",")}`;
 }
 
+/**
+ * Referencia legible para mostrar: agrupa tramos contiguos y separa con ", ".
+ * Ej.: "Juan 3:16-18", "Juan 3:16, 18", "Juan 3:1-3, 5".
+ */
+export function formatVerseReference(
+  bookName: string,
+  chapterNumber: number,
+  verseNumbers: number[],
+): string {
+  if (verseNumbers.length === 0) return `${bookName} ${chapterNumber}`;
+  const sorted = [...new Set(verseNumbers)].sort((left, right) => left - right);
+  const ranges: string[] = [];
+  let start = sorted[0];
+  for (let index = 1; index <= sorted.length; index += 1) {
+    const previous = sorted[index - 1];
+    if (sorted[index] === previous + 1) continue;
+    ranges.push(start === previous ? `${start}` : `${start}-${previous}`);
+    start = sorted[index];
+  }
+  return `${bookName} ${chapterNumber}:${ranges.join(", ")}`;
+}
+
 export function buildBiblePassage({
   bookName,
   chapterNumber,

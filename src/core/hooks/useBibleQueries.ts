@@ -30,29 +30,34 @@ export function useVersesByChapter(chapterId: string) {
 }
 
 /**
- * Un versículo en todas las traducciones, pedidas en paralelo. La traducción
- * actual reutiliza el texto que ya está en pantalla.
+ * Los versículos seleccionados (de un mismo capítulo) en todas las traducciones.
+ * Se pide el capítulo entero por traducción, en paralelo, con la misma clave que
+ * `useVersesByChapter` para compartir caché con el lector. La traducción actual
+ * reutiliza el texto que ya está en pantalla.
  */
-export function useVerseComparison(verse: Verse | null) {
+export function useVerseComparison(verses: Verse[]) {
   const { availableTranslations, getRepository, translation } = useBibleRepository();
+  const chapterId = verses[0]?.chapterId;
   const results = useQueries({
     queries: availableTranslations.map((item) => ({
-      queryKey: ["verse", item, verse?.chapterId, verse?.number],
+      queryKey: ["verses", item, chapterId],
       queryFn: ({ signal }: { signal: AbortSignal }) =>
-        getRepository(item).getVerse(verse!.chapterId, verse!.number, signal),
-      enabled: !!verse,
-      initialData: verse !== null && item === translation ? verse : undefined,
+        getRepository(item).getVersesByChapter(chapterId!, signal),
+      enabled: !!chapterId && item !== translation,
       staleTime: Infinity,
       retry: 1,
     })),
   });
+  const numbers = verses.map((verse) => verse.number);
   return availableTranslations.map((item, index) => {
     const result = results[index];
+    const isCurrent = item === translation;
+    const chapter = isCurrent ? verses : result.data;
     return {
       translation: item,
-      verse: result.data,
-      isPending: result.isPending,
-      error: result.error,
+      verses: chapter?.filter((verse) => numbers.includes(verse.number)),
+      isPending: isCurrent ? false : result.isPending,
+      error: isCurrent ? null : result.error,
       refetch: result.refetch,
     };
   });

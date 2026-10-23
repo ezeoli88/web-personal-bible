@@ -6,7 +6,7 @@ import { useBibleAISelection } from "../../core/hooks/useBibleAISelection";
 import { useChapterNavigation, useVersesByChapter } from "../../core/hooks/useBibleQueries";
 import { bookSlug } from "../../core/lib/bookSlugs";
 import { parseBookNumber } from "../../core/lib/ids";
-import { buildBiblePassage } from "../../core/lib/passageBuilder";
+import { buildBiblePassage, formatVerseReference } from "../../core/lib/passageBuilder";
 import type { BiblePassage } from "../../core/types/ai";
 import type { ChapterNavigationInfo, Verse } from "../../core/types/bible";
 import { TRANSLATION_NOTICES, type BibleTranslation } from "../../core/types/translation";
@@ -52,7 +52,7 @@ export function ChapterReaderPage({
   const [panelOpen, setPanelOpen] = useState(false);
   const [passage, setPassage] = useState<BiblePassage | null>(null);
   const [footnotesOpen, setFootnotesOpen] = useState(false);
-  const [compareVerse, setCompareVerse] = useState<Verse | null>(null);
+  const [compareVerses, setCompareVerses] = useState<Verse[]>([]);
   const restored = useRef(false);
 
   const footnotes = verses
@@ -74,7 +74,7 @@ export function ChapterReaderPage({
     setPanelOpen(false);
     setPassage(null);
     setFootnotesOpen(false);
-    setCompareVerse(null);
+    setCompareVerses([]);
     restored.current = false;
   }, [chapterId, translation, selection.clearSelection]);
 
@@ -117,7 +117,7 @@ export function ChapterReaderPage({
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
-      if (panelOpen || footnotesOpen || compareVerse) return;
+      if (panelOpen || footnotesOpen || compareVerses.length > 0) return;
       if (event.altKey || event.metaKey || event.ctrlKey) return;
       const target = event.target;
       if (target instanceof HTMLElement) {
@@ -135,7 +135,7 @@ export function ChapterReaderPage({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [chapterNav, compareVerse, footnotesOpen, goToChapter, panelOpen]);
+  }, [chapterNav, compareVerses, footnotesOpen, goToChapter, panelOpen]);
 
   async function handleAskAI() {
     if (!(await isOnline())) {
@@ -156,8 +156,8 @@ export function ChapterReaderPage({
   }
 
   function handleCompareSelect(nextTranslation: BibleTranslation) {
-    const verseNumber = compareVerse?.number;
-    setCompareVerse(null);
+    const verseNumber = compareVerses[0]?.number;
+    setCompareVerses([]);
     if (nextTranslation === translation) return;
     void setTranslation(nextTranslation);
     void navigate({
@@ -233,15 +233,17 @@ export function ChapterReaderPage({
           count={selection.selectedVerses.length}
           maxCount={selection.maxSelectable}
           onAskAI={() => void handleAskAI()}
-          onCompare={() => setCompareVerse(selection.selectedVerses[0] ?? null)}
+          onCompare={() => setCompareVerses(selection.selectedVerses)}
           onCancel={selection.clearSelection}
         />
       ) : null}
       <VerseCompareSheet
-        verse={compareVerse}
-        reference={compareVerse ? `${bookName} ${chapterNumber}:${compareVerse.number}` : ""}
+        verses={compareVerses}
+        reference={compareVerses.length > 0
+          ? formatVerseReference(bookName, chapterNumber, compareVerses.map((verse) => verse.number))
+          : ""}
         onSelectTranslation={handleCompareSelect}
-        onClose={() => setCompareVerse(null)}
+        onClose={() => setCompareVerses([])}
       />
       {panelOpen && passage ? (
         <BibleAiPanel

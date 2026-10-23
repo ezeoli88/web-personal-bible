@@ -12,17 +12,19 @@ import {
 import styles from "./VerseCompareSheet.module.css";
 
 interface Props {
-  verse: Verse | null;
+  /** Versículos seleccionados en la traducción actual; vacío = cerrado. */
+  verses: Verse[];
   reference: string;
   onSelectTranslation: (translation: BibleTranslation) => void;
   onClose: () => void;
 }
 
-export function VerseCompareSheet({ verse, reference, onSelectTranslation, onClose }: Props) {
+export function VerseCompareSheet({ verses, reference, onSelectTranslation, onClose }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const { translation: current } = useBibleRepository();
-  const entries = useVerseComparison(verse);
-  const open = verse !== null;
+  const entries = useVerseComparison(verses);
+  const open = verses.length > 0;
+  const plural = verses.length > 1;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -69,19 +71,29 @@ export function VerseCompareSheet({ verse, reference, onSelectTranslation, onClo
                   <span className={styles.label}>{TRANSLATION_LABELS[entry.translation]}</span>
                   {isCurrent ? <span className={styles.badge}>Actual</span> : null}
                 </span>
-                {entry.verse ? (
-                  <span className={styles.text}>{entry.verse.text}</span>
+                {entry.verses ? (
+                  <span className={styles.passage}>
+                    {verses.map(({ number }) => {
+                      const match = entry.verses?.find((item) => item.number === number);
+                      return (
+                        <span key={number} className={styles.text} data-testid={`compare-${entry.translation}-${number}`}>
+                          <span className={styles.number}>{number}</span>
+                          {match ? match.text : <span className={styles.missing}>No incluido en esta versión.</span>}
+                        </span>
+                      );
+                    })}
+                  </span>
                 ) : entry.error ? (
                   <span className={styles.error} role="alert">
                     {entry.error instanceof BollsTranslationUnavailableError
                       ? "Esta traducción no está disponible en este momento."
-                      : "No se pudo cargar este versículo."}
+                      : plural ? "No se pudieron cargar estos versículos." : "No se pudo cargar este versículo."}
                   </span>
                 ) : (
                   <span className={styles.loading}>Cargando…</span>
                 )}
               </button>
-              {entry.error && !entry.verse ? (
+              {entry.error && !entry.verses ? (
                 <button type="button" className={styles.retry} onClick={() => void entry.refetch()}>
                   Reintentar
                 </button>
