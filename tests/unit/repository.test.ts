@@ -22,7 +22,17 @@ describe("BollsBibleClient", () => {
 describe("BollsBibleRepository", () => {
   const client = {
     getChapter: vi.fn(async () => [{ pk: 1, verse: 1, text: "<b>En el principio</b>", comment: "<i>nota</i>" }]),
+    getVerse: vi.fn(async () => ({ pk: 2, verse: 16, text: "Porque de tal manera<sup>a</sup> amó" })),
   } as unknown as Client;
+
+  it("loads one verse in its own translation", async () => {
+    const repository = new BollsBibleRepository(client, "LBLA");
+    const verse = await repository.getVerse("book-43-chapter-3", 16);
+    expect(client.getVerse).toHaveBeenCalledWith("LBLA", 43, 3, 16, undefined);
+    expect(verse).toMatchObject({ id: "lbla-43-3-16", chapterId: "book-43-chapter-3", number: 16 });
+    expect(verse.text).not.toContain("<");
+    await expect(repository.getVerse("nope", 1)).rejects.toThrow("Capítulo inválido");
+  });
 
   it("lists books and chapters from the canon, not the network", async () => {
     const repository = new BollsBibleRepository(client, "NTV");

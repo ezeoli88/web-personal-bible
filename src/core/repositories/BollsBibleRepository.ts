@@ -57,6 +57,20 @@ export class BollsBibleRepository implements BibleRepository {
     }));
   }
 
+  async getVerse(chapterId: string, verseNumber: number, signal?: AbortSignal): Promise<Verse> {
+    const { bookNumber, chapterNumber } = parseChapterInfo(chapterId);
+    if (!Number.isFinite(bookNumber) || !Number.isFinite(chapterNumber)) {
+      throw new Error("Capítulo inválido");
+    }
+    const verse = await this.client.getVerse(this.translation, bookNumber, chapterNumber, verseNumber, signal);
+    return {
+      id: makeVerseId(this.translation, bookNumber, chapterNumber, verse.verse),
+      chapterId,
+      number: verse.verse,
+      text: bollsVerseToPlainText(verse.text),
+    };
+  }
+
   async getBookById(bookId: string): Promise<Book | null> {
     const bookNumber = parseBookNumber(bookId);
     const bookInfo = BIBLE_BOOKS.find((book) => book.bookNumber === bookNumber);
