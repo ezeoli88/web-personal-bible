@@ -108,6 +108,15 @@ describe("installable document", () => {
     expect(themeInit).toContain(darkTheme.colors.background);
   });
 
+  it("opts out of the browser's forced dark mode so the light theme stays light", () => {
+    const global = readFileSync(new URL("../../src/styles/global.css", import.meta.url), "utf8");
+    expect(html).toContain('<meta name="color-scheme" content="only light" />');
+    expect(themeInit).toContain('"only " + mode');
+    expect(global).toContain(":root { color-scheme: only light; }");
+    expect(global).toContain(':root[data-theme="dark"] { color-scheme: only dark; }');
+    expect(global).not.toContain("prefers-color-scheme");
+  });
+
   it("lets the service worker load from the same origin without caching auth", () => {
     expect(headers).toContain("script-src 'self'");
     expect(headers).toContain("worker-src 'self'");

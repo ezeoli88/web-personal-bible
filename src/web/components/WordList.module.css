@@ -50,7 +50,7 @@
   font-size: 11px;
   font-weight: 600;
 }
-.strongBadge { background: #e3f2fd; color: #1565c0; font-family: ui-monospace, monospace; }
+.strongBadge { background: var(--color-highlight); color: var(--color-primary); font-family: ui-monospace, monospace; }
 .posBadge { background: #f3e5f5; color: #7b1fa2; font-weight: 500; }
 .languageLabel { color: var(--color-textTertiary); font-size: 11px; }
 .wordHint { color: var(--color-textSecondary); font-size: 14px; font-style: italic; }

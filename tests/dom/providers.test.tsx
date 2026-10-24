@@ -54,6 +54,42 @@ describe("ThemeProvider", () => {
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(document.querySelector('meta[name="theme-color"]')?.getAttribute("content")).toBe(lightTheme.colors.background);
   });
+
+  it("toggles light ↔ dark, opts out of forced dark and remembers the choice", async () => {
+    const user = userEvent.setup();
+    const colorScheme = () => document.querySelector('meta[name="color-scheme"]')?.getAttribute("content");
+    const { unmount } = render(
+      <ThemeProvider>
+        <ThemeToggle />
+      </ThemeProvider>,
+    );
+    const toggle = screen.getByTestId("theme-toggle");
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(colorScheme()).toBe("only light");
+    expect(toggle).toHaveAccessibleName("Activar tema oscuro");
+
+    await user.click(toggle);
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(colorScheme()).toBe("only dark");
+    expect(toggle).toHaveAccessibleName("Activar tema claro");
+
+    await user.click(toggle);
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(colorScheme()).toBe("only light");
+    expect(localStorage.getItem("theme-mode")).toBe("light");
+
+    await user.click(toggle);
+    unmount();
+    document.documentElement.dataset.theme = "light";
+    render(
+      <ThemeProvider>
+        <ThemeToggle />
+      </ThemeProvider>,
+    );
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(colorScheme()).toBe("only dark");
+    expect(screen.getByTestId("theme-toggle")).toHaveAccessibleName("Activar tema claro");
+  });
 });
 
 describe("fresh query client", () => {

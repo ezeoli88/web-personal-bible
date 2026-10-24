@@ -1,5 +1,6 @@
-:root { color-scheme: light; }
-:root[data-theme="dark"] { color-scheme: dark; }
+/* `only` keeps mobile browsers from force-darkening the light theme. */
+:root { color-scheme: only light; }
+:root[data-theme="dark"] { color-scheme: only dark; }
 
 * { box-sizing: border-box; }
 

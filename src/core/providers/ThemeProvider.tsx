@@ -23,19 +23,26 @@ function readInitialMode(): ThemeMode {
   return isThemeMode(stored) ? stored : "light";
 }
 
-function applyTheme(mode: ThemeMode) {
-  if (typeof document === "undefined") return;
-  document.documentElement.dataset.theme = mode;
-  const color = getTheme(mode).colors.background;
-  const metas = document.head.querySelectorAll('meta[name="theme-color"]');
+function setMeta(name: string, content: string) {
+  const metas = document.head.querySelectorAll(`meta[name="${name}"]`);
   if (metas.length === 0) {
     const meta = document.createElement("meta");
-    meta.setAttribute("name", "theme-color");
-    meta.setAttribute("content", color);
+    meta.setAttribute("name", name);
+    meta.setAttribute("content", content);
     document.head.appendChild(meta);
     return;
   }
-  metas.forEach((meta) => meta.setAttribute("content", color));
+  metas.forEach((meta) => meta.setAttribute("content", content));
+}
+
+// `only` opts out of the browser's forced dark mode (Chrome Android "auto dark
+// web contents", Android WebView/PWA). Without it the light theme gets
+// algorithmically darkened on phones whose system theme is dark.
+function applyTheme(mode: ThemeMode) {
+  if (typeof document === "undefined") return;
+  document.documentElement.dataset.theme = mode;
+  setMeta("color-scheme", `only ${mode}`);
+  setMeta("theme-color", getTheme(mode).colors.background);
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
