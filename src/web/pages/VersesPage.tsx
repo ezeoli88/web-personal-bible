@@ -21,6 +21,9 @@ export function VersesPage({ chapterId, bookName, chapterNumber, slug }: Props) 
       to: "/$book/$chapter",
       params: { book: slug, chapter: String(chapterNumber) },
       search: { v: verseNumber },
+      // El lector hace scroll al versículo; si el router resetea el scroll
+      // después, lo deja arriba de todo (pasa cuando el capítulo ya está en caché).
+      resetScroll: verseNumber === undefined,
     });
   }
 

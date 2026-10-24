@@ -164,6 +164,7 @@ export function ChapterReaderPage({
       to: "/$book/$chapter",
       params: { book: slug, chapter: String(chapterNumber) },
       search: { v: verseNumber },
+      resetScroll: false,
     });
   }
 
