@@ -32,6 +32,21 @@ function sse(text: string): Response {
   return new Response(body, { headers: { "content-type": "text/event-stream" } });
 }
 
+function controlledSse(signal?: AbortSignal | null) {
+  const encoder = new TextEncoder();
+  let streamController!: ReadableStreamDefaultController<Uint8Array>;
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      streamController = controller;
+    },
+  });
+  signal?.addEventListener("abort", () => streamController.error(new DOMException("Aborted", "AbortError")));
+  return {
+    response: new Response(stream, { headers: { "content-type": "text/event-stream" } }),
+    send: (event: object) => streamController.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`)),
+  };
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -70,6 +85,50 @@ describe("BibleAiPanel", () => {
     await user.click(await screen.findByTestId("ai-mode-reflection"));
     expect(await screen.findByText("Paz")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copiar" })).toBeInTheDocument();
+  });
+
+  it("shows a skeleton status while the menu loads", () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+    render(
+      <QueryClientProvider client={createAppQueryClient()}>
+        <BibleAiPanel open passage={passage} access="allowed" onClose={vi.fn()} onLogin={vi.fn()} />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Cargando opciones de análisis...");
+    expect(screen.getByTestId("menu-skeleton")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("shows the passage while waiting and keeps the partial text after Detener", async () => {
+    const user = userEvent.setup();
+    let stream: ReturnType<typeof controlledSse> | undefined;
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as { mode: string };
+      if (body.mode === "menu") return Response.json(menu);
+      stream = controlledSse(init?.signal);
+      return stream.response;
+    }));
+    render(
+      <QueryClientProvider client={createAppQueryClient()}>
+        <BibleAiPanel open passage={passage} access="allowed" onClose={vi.fn()} onLogin={vi.fn()} />
+      </QueryClientProvider>,
+    );
+    await user.click(await screen.findByTestId("ai-mode-reflection"));
+    await waitFor(() => expect(stream).toBeDefined());
+    stream!.send({ type: "start", mode: "reflection" });
+    expect(await screen.findByTestId("passage-reading")).toHaveTextContent("Porque de tal manera amó Dios al mundo.");
+    expect(screen.getByText("Consultando sobre reflexión...")).toBeInTheDocument();
+
+    stream!.send({ type: "text", content: "Texto parcial" });
+    expect(await screen.findByText("Texto parcial")).toBeInTheDocument();
+    expect(screen.queryByTestId("passage-reading")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "← Volver al menú" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Detener" }));
+    expect(screen.getByText("Texto parcial")).toBeInTheDocument();
+    expect(screen.getByText("Detuviste la respuesta antes de que terminara.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "← Volver al menú" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Copiar" })).toBeInTheDocument();
+    expect(screen.queryByTestId("streaming-caret")).not.toBeInTheDocument();
   });
 });
 

@@ -4,6 +4,7 @@ import type { BiblePassage } from "../../core/types/ai";
 import { LoginPrompt } from "../auth/LoginPrompt";
 import { useBibleAiPanel, type PanelAccess } from "../hooks/useBibleAiPanel";
 import { MarkdownText } from "./MarkdownText";
+import { PassageReading } from "./PassageReading";
 import { StreamingText } from "./StreamingText";
 import { WordList } from "./WordList";
 import styles from "./BibleAiPanel.module.css";
@@ -17,6 +18,29 @@ interface Props {
 }
 
 const AUTO_SCROLL_THRESHOLD = 50;
+const SKELETON_CARDS = [["42%", "88%"], ["60%", "70%"], ["50%", "94%"], ["38%", "76%"]];
+
+function MenuSkeleton() {
+  return (
+    <div className={styles.menu}>
+      <p role="status" className={styles.visuallyHidden}>Cargando opciones de análisis...</p>
+      <div className={styles.skeleton} aria-hidden="true" data-testid="menu-skeleton">
+        <div className={clsx(styles.skLine, styles.skTitle)} />
+        <div className={clsx(styles.skLine, styles.skTranslation)} />
+        <div className={clsx(styles.skLine, styles.skMenuTitle)} />
+        {SKELETON_CARDS.map(([label, hint], index) => (
+          <div key={index} className={styles.skCard}>
+            <div className={clsx(styles.skLine, styles.skIcon)} />
+            <div className={styles.skStack}>
+              <div className={styles.skLine} style={{ width: label }} />
+              <div className={clsx(styles.skLine, styles.skHint)} style={{ width: hint }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function BibleAiPanel({ open, passage, access, onClose, onLogin }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -40,7 +64,7 @@ export function BibleAiPanel({ open, passage, access, onClose, onLogin }: Props)
   useEffect(() => {
     const scroller = scrollerRef.current;
     if (!scroller || !autoScroll.current) return;
-    if (panel.viewState === "streaming" || panel.words.step === "defining") {
+    if ((panel.viewState === "streaming" && panel.response) || (panel.words.step === "defining" && panel.words.definitions)) {
       scroller.scrollTop = scroller.scrollHeight;
     }
   }, [panel.response, panel.words.definitions, panel.viewState, panel.words.step]);
@@ -58,6 +82,11 @@ export function BibleAiPanel({ open, passage, access, onClose, onLogin }: Props)
 
   const modeLabel = panel.currentMode ? panel.labels[panel.currentMode] : null;
   const wordsStep = panel.words.step;
+  const modeBusy = panel.viewState === "loading" || panel.viewState === "streaming";
+  const waitingFirstText = panel.viewState === "loading" ||
+    (panel.viewState === "streaming" && !panel.response && !panel.error);
+  const activeWord = panel.words.activeWord;
+  const activeWordLabel = activeWord ? (activeWord.spanish || activeWord.hint || activeWord.original) : null;
 
   return (
     <dialog
@@ -69,7 +98,7 @@ export function BibleAiPanel({ open, passage, access, onClose, onLogin }: Props)
     >
       <div className={styles.content}>
         {panel.viewState === "auth-loading" || panel.viewState === "menu-loading" ? (
-          <p className={styles.loading}>Cargando opciones de análisis...</p>
+          <MenuSkeleton />
         ) : null}
 
         {panel.viewState === "login-required" ? <LoginPrompt onLogin={onLogin} /> : null}
@@ -116,24 +145,15 @@ export function BibleAiPanel({ open, passage, access, onClose, onLogin }: Props)
           </div>
         ) : null}
 
-        {panel.viewState === "loading" ? (
-          <p className={styles.loading}>
-            Consultando sobre {modeLabel ? modeLabel.label.toLowerCase() : "el pasaje"}...
-          </p>
-        ) : null}
-
         {panel.viewState === "words" && passage ? (
           <div className={styles.response}>
             <div className={styles.modeHeader}>
               <span aria-hidden="true">{panel.labels.words.emoji}</span>
-              <span>
-                {panel.words.activeWord
-                  ? (panel.words.activeWord.spanish || panel.words.activeWord.hint || panel.words.activeWord.original)
-                  : panel.labels.words.label}
-              </span>
+              <span>{activeWordLabel ?? panel.labels.words.label}</span>
             </div>
+            <p role="status" className={styles.visuallyHidden}>{wordsStep === "complete" ? "Respuesta lista" : ""}</p>
             {wordsStep === "idle" || wordsStep === "identifying" ? (
-              <p className={styles.loading}>Preparando las palabras del pasaje...</p>
+              <PassageReading passage={passage} status="Preparando las palabras del pasaje..." />
             ) : null}
             {wordsStep === "browsing" ? (
               <>
@@ -153,9 +173,19 @@ export function BibleAiPanel({ open, passage, access, onClose, onLogin }: Props)
             ) : null}
             {wordsStep === "defining" || wordsStep === "complete" || wordsStep === "error" ? (
               <>
-                <div ref={scrollerRef} className={styles.scroller} onScroll={onScroll}>
+                <div
+                  ref={scrollerRef}
+                  className={styles.scroller}
+                  onScroll={onScroll}
+                  aria-busy={wordsStep === "defining" ? true : undefined}
+                >
                   {wordsStep === "error" && panel.words.error ? (
                     <p className={styles.error} role="alert">⚠️ {panel.words.error}</p>
+                  ) : wordsStep === "defining" && !panel.words.definitions ? (
+                    <PassageReading
+                      passage={passage}
+                      status={activeWordLabel ? `Buscando el significado de «${activeWordLabel}»...` : "Buscando el significado..."}
+                    />
                   ) : (
                     <StreamingText text={panel.words.definitions} isStreaming={wordsStep === "defining"} />
                   )}
@@ -187,32 +217,45 @@ export function BibleAiPanel({ open, passage, access, onClose, onLogin }: Props)
           </div>
         ) : null}
 
-        {(panel.viewState === "streaming" || panel.viewState === "response") && modeLabel ? (
+        {(modeBusy || panel.viewState === "response") && modeLabel && passage ? (
           <div className={styles.response}>
             <div className={styles.modeHeader}>
               <span aria-hidden="true">{modeLabel.emoji}</span>
               <span>{modeLabel.label}</span>
             </div>
-            <div ref={scrollerRef} className={styles.scroller} onScroll={onScroll}>
+            <p role="status" className={styles.visuallyHidden}>
+              {panel.viewState === "response" && !panel.error && !panel.stopped ? "Respuesta lista" : ""}
+            </p>
+            <div
+              ref={scrollerRef}
+              className={styles.scroller}
+              onScroll={onScroll}
+              aria-busy={modeBusy ? true : undefined}
+            >
               {panel.error ? (
                 <p className={styles.error} role="alert">⚠️ {panel.error}</p>
+              ) : waitingFirstText ? (
+                <PassageReading passage={passage} status={`Consultando sobre ${modeLabel.label.toLowerCase()}...`} />
               ) : panel.viewState === "streaming" ? (
                 <StreamingText text={panel.response} isStreaming />
               ) : (
                 <MarkdownText>{panel.response}</MarkdownText>
               )}
+              {panel.stopped ? <p className={styles.note}>Detuviste la respuesta antes de que terminara.</p> : null}
               {panel.notes.map((note) => <p key={note} className={styles.note}>• {note}</p>)}
             </div>
             <div className={styles.actions}>
-              <button
-                type="button"
-                className={styles.secondary}
-                onClick={panel.backToMenu}
-                disabled={panel.viewState === "streaming"}
-              >
-                ← Volver al menú
-              </button>
-              {!panel.error && panel.viewState === "response" ? (
+              {modeBusy ? (
+                <button type="button" className={styles.secondary} onClick={panel.stopResponse}>
+                  <span className={styles.stopIcon} aria-hidden="true" />
+                  Detener
+                </button>
+              ) : (
+                <button type="button" className={styles.secondary} onClick={panel.backToMenu}>
+                  ← Volver al menú
+                </button>
+              )}
+              {!panel.error && panel.viewState === "response" && panel.response ? (
                 <button type="button" className={styles.primary} onClick={() => void panel.copyResponse()}>
                   Copiar
                 </button>

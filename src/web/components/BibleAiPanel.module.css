@@ -41,7 +41,6 @@
 .modeLabel { font-weight: 600; }
 .modeHint { margin-top: 2px; color: var(--color-textSecondary); font-size: 13px; }
 .footerNote { color: var(--color-textTertiary); font-size: 12px; text-align: center; }
-.loading { margin: auto; color: var(--color-textSecondary); text-align: center; }
 .denied { margin: auto; color: var(--color-text); text-align: center; }
 .error {
   margin: 0 0 var(--space-m);
@@ -82,7 +81,15 @@
   cursor: pointer;
 }
 .primary { border: 0; background: var(--color-primary); color: var(--color-onPrimary); }
-.secondary { border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); }
+.secondary {
+  display: inline-flex;
+  gap: var(--space-s);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
 .secondary:disabled { opacity: 0.5; cursor: default; }
 .footer { padding: var(--space-m); }
 .closeMenu { width: 100%; }
@@ -94,4 +101,56 @@
     margin: 0 0 0 auto;
     border-left: 1px solid var(--color-border);
   }
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.stopIcon { width: 10px; height: 10px; flex-shrink: 0; border-radius: 2px; background: currentColor; }
+
+.skeleton {
+  --sk-base: color-mix(in srgb, var(--color-text) 9%, var(--color-background));
+  --sk-shine: color-mix(in srgb, var(--color-text) 3%, var(--color-background));
+  display: flex;
+  flex-direction: column;
+}
+:global(:root[data-theme="dark"]) .skeleton {
+  --sk-base: color-mix(in srgb, var(--color-text) 13%, var(--color-background));
+  --sk-shine: color-mix(in srgb, var(--color-text) 22%, var(--color-background));
+}
+.skLine {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--sk-base) 30%, var(--sk-shine) 50%, var(--sk-base) 70%);
+  background-size: 300% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+.skTitle { width: 55%; height: 22px; margin: var(--space-m) auto var(--space-s); }
+.skTranslation { width: 22%; height: 13px; margin: 0 auto var(--space-s); }
+.skMenuTitle { width: 48%; height: 14px; margin: var(--space-xs) auto var(--space-l); }
+.skCard {
+  display: flex;
+  gap: var(--space-m);
+  align-items: center;
+  margin-bottom: var(--space-s);
+  padding: var(--space-m);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+.skIcon { width: 32px; height: 32px; flex-shrink: 0; border-radius: var(--radius-m); }
+.skStack { display: flex; flex: 1; flex-direction: column; gap: var(--space-s); }
+.skHint { height: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .skLine { animation: none; }
 }

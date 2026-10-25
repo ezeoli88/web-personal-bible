@@ -9,7 +9,7 @@ import {
   TRANSLATION_NOTICES,
 } from "../../src/core/types/translation";
 import { darkTheme, getTheme, lightTheme } from "../../src/core/theme";
-import { parseMarkdown } from "../../src/core/lib/markdown";
+import { parseMarkdown, parseMarkdownWithOffsets } from "../../src/core/lib/markdown";
 import { makeBookId, makeChapterId, makeVerseId, parseBookNumber, parseChapterInfo } from "../../src/core/lib/ids";
 import { bookSlug, resolveBookParam, slugifyBookName } from "../../src/core/lib/bookSlugs";
 import { sanitizeReturnTo } from "../../worker/lib/returnTo";
@@ -106,6 +106,35 @@ describe("markdown", () => {
     expect(segments.some((segment) => segment.heading === 1 && segment.text === "Título")).toBe(true);
     expect(segments.some((segment) => segment.bold && segment.text === "fuerte")).toBe(true);
     expect(segments.some((segment) => segment.italic && segment.text === "cursiva")).toBe(true);
+  });
+
+  it("keeps parseMarkdown segments unchanged", () => {
+    expect(parseMarkdown("## Hola\n**a** y *b*")).toEqual([
+      { text: "Hola", bold: false, italic: false, heading: 2 },
+      { text: "\n", bold: false, italic: false, heading: 0 },
+      { text: "a", bold: true, italic: false, heading: 0 },
+      { text: " y ", bold: false, italic: false, heading: 0 },
+      { text: "b", bold: false, italic: true, heading: 0 },
+    ]);
+  });
+
+  it("reports the source offset of each segment", () => {
+    const source = "## Hola\nuno **dos** *tres* ***cuatro***";
+    const segments = parseMarkdownWithOffsets(source);
+    expect(segments.map(({ text, start }) => [text, start])).toEqual([
+      ["Hola", 3],
+      ["\n", 7],
+      ["uno ", 8],
+      ["dos", 14],
+      [" ", 19],
+      ["tres", 21],
+      [" ", 26],
+      ["cuatro", 30],
+    ]);
+    for (const segment of segments) {
+      expect(source.slice(segment.start, segment.start + segment.text.length)).toBe(segment.text);
+    }
+    expect(segments.map(({ start: _start, ...segment }) => segment)).toEqual(parseMarkdown(source));
   });
 });
 
