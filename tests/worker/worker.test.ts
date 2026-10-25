@@ -394,6 +394,7 @@ describe("AI proxy", () => {
         accept: "text/event-stream",
         "x-request-id": "req-1",
         "cf-connecting-ip": "203.0.113.8",
+        "x-api-key": "from-the-browser",
       }),
       body: "{}",
     });
@@ -414,6 +415,7 @@ describe("AI proxy", () => {
     expect(seen.headers?.get("accept")).toBe("text/event-stream");
     expect(seen.headers?.get("x-request-id")).toBe("req-1");
     expect(seen.headers?.get("cf-connecting-ip")).toBe("203.0.113.8");
+    expect(seen.headers?.get("x-api-key")).toBe("test-logosagent-key");
     expect(response.headers.get("set-cookie")).toBeNull();
     expect(response.headers.get("cache-control")).toContain("no-cache");
     expect(response.headers.get("cache-control")).toContain("no-transform");
@@ -476,6 +478,35 @@ describe("AI proxy", () => {
     });
     expect(down.status).toBe(502);
     expect(await down.json()).toMatchObject({ code: "UPSTREAM_UNAVAILABLE" });
+  });
+
+  it("treats an upstream 401 as a misconfigured key, not as a user error", async () => {
+    const cookie = await asUser(nextEmail("upstream-401"));
+    const url = `${HOST}/api/bible-ai/stream`;
+    const response = await call(createApp({
+      api: apiFor(Response.json({ error: "API key inválida", code: "INVALID_API_KEY" }, { status: 401 })),
+    }), url, {
+      method: "POST",
+      headers: sameOriginHeaders(url, { cookie, "content-type": "application/json" }),
+      body: "{}",
+    });
+    expect(response.status).toBe(502);
+    expect(await response.json()).toMatchObject({ code: "UPSTREAM_UNAVAILABLE" });
+  });
+
+  it("does not call logosagent-api without LOGOSAGENT_API_KEY", async () => {
+    const cookie = await asUser(nextEmail("no-key"));
+    const url = `${HOST}/api/bible-ai/stream`;
+    let called = false;
+    const api = { fetch: async () => { called = true; return new Response("ok"); } } as unknown as Fetcher;
+    const response = await createApp({ api }).fetch(new Request(url, {
+      method: "POST",
+      headers: sameOriginHeaders(url, { cookie, "content-type": "application/json" }),
+      body: "{}",
+    }), { ...env, LOGOSAGENT_API_KEY: "" });
+    expect(response.status).toBe(502);
+    expect(await response.json()).toMatchObject({ code: "UPSTREAM_UNAVAILABLE" });
+    expect(called).toBe(false);
   });
 
   it("rate limits the 21st call for one email", async () => {

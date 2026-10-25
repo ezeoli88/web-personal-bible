@@ -4,6 +4,7 @@ import { apiError, logEvent, MAX_AI_BODY_BYTES, readLimitedBody } from "../lib/h
 import type { AppDeps, AppEnv } from "../app-env";
 
 const RESPONSE_HEADERS = ["content-type", "x-request-id", "retry-after"] as const;
+const UNAVAILABLE_MESSAGE = "La IA no está disponible en este momento.";
 
 export function registerAiProxy(app: Hono<AppEnv>, deps: AppDeps): void {
   app.post("/api/bible-ai/stream", requireSession, requireAllowed, async (c) => {
@@ -29,10 +30,19 @@ export function registerAiProxy(app: Hono<AppEnv>, deps: AppDeps): void {
       return apiError(c, 429, "RATE_LIMIT_EXCEEDED", "Demasiadas solicitudes. Probá de nuevo en un minuto.");
     }
 
+    // logosagent-api falla cerrado sin esta clave: sin el secreto no tiene sentido llamarlo.
+    const apiKey = c.env.LOGOSAGENT_API_KEY;
+    if (!apiKey) {
+      logEvent("ai.api_key_missing", {}, "error");
+      return apiError(c, 502, "UPSTREAM_UNAVAILABLE", UNAVAILABLE_MESSAGE);
+    }
+
+    const requestId = c.req.header("x-request-id") || crypto.randomUUID();
     const headers = new Headers();
     headers.set("content-type", "application/json");
     headers.set("accept", c.req.header("accept") || "application/json, text/event-stream");
-    headers.set("x-request-id", c.req.header("x-request-id") || crypto.randomUUID());
+    headers.set("x-request-id", requestId);
+    headers.set("x-api-key", apiKey);
     const ip = c.req.header("cf-connecting-ip");
     if (ip) headers.set("cf-connecting-ip", ip);
 
@@ -43,6 +53,12 @@ export function registerAiProxy(app: Hono<AppEnv>, deps: AppDeps): void {
         headers,
         body,
       });
+      // Un 401 del Worker es una clave mal configurada, no un problema de la sesión del usuario.
+      if (upstream.status === 401) {
+        await upstream.body?.cancel();
+        logEvent("ai.upstream_unauthorized", { requestId }, "error");
+        return apiError(c, 502, "UPSTREAM_UNAVAILABLE", UNAVAILABLE_MESSAGE);
+      }
       const responseHeaders = new Headers();
       for (const name of RESPONSE_HEADERS) {
         const value = upstream.headers.get(name);
@@ -55,7 +71,7 @@ export function registerAiProxy(app: Hono<AppEnv>, deps: AppDeps): void {
       logEvent("ai.upstream_failed", {
         error: error instanceof Error ? error.message : String(error),
       }, "error");
-      return apiError(c, 502, "UPSTREAM_UNAVAILABLE", "La IA no está disponible en este momento.");
+      return apiError(c, 502, "UPSTREAM_UNAVAILABLE", UNAVAILABLE_MESSAGE);
     }
   });
 }

@@ -82,26 +82,25 @@ No están en el repo ni en `wrangler.jsonc`. Van con `wrangler secret put` sobre
 | `SESSION_SECRET` | 32 bytes o más, firma las cookies `__Host-bw_session` y `__Host-bw_oidc` |
 | `ADMIN_EMAIL` | `ekiolivier@gmail.com` |
 | `CF_API_TOKEN` | permiso de cuenta **Access: Apps and Policies → Edit**, solo esta cuenta |
+| `LOGOSAGENT_API_KEY` | mismo valor que el secreto `API_ACCESS_KEY` de `logosagent-api`; el proxy lo envía en `x-api-key` |
 
-El build avisa si no están en el entorno local. Eso es esperable: no los pongas en `.env` ni en el repositorio. `.dev.vars.example` solo tiene placeholders para el bypass.
+El build avisa si no están en el entorno local. Eso es esperable: no los pongas en `.env` ni en el repositorio. `.dev.vars.example` solo tiene placeholders para el bypass. Para usar la IA en `vite dev`, poné en tu `.dev.vars` el valor real de `LOGOSAGENT_API_KEY`: el binding remoto llama al Worker desplegado.
 
 Si la base todavía no tiene tablas: `npm run db:migrate`.
 
-## Cierre de `logosagent-api` (otro repositorio)
+## `logosagent-api` (otro repositorio)
 
-No se abre un PR ahí. Cuando la IA web funcione por el Service Binding, en `server-agent-ntv-app` / `wrangler.toml` hay que agregar y desplegar:
+`logosagent-api` ([server-agent-ntv-app](https://github.com/ezeoli88/server-agent-ntv-app)) no tiene URL pública (`workers_dev = false`, `preview_urls = false`): solo lo alcanza este Worker por el binding `API`. La app móvil quedó sin IA; el dueño lo aceptó.
 
-```toml
-workers_dev = false
-preview_urls = false
-```
+Además exige `x-api-key` y falla cerrado si no tiene la clave configurada. El proxy envía `LOGOSAGENT_API_KEY` y nunca reenvía la del navegador. Si el secreto falta, responde `502 UPSTREAM_UNAVAILABLE` sin llamar al Worker (log `ai.api_key_missing`). Un `401` de `logosagent-api` también se informa como `502`, porque es una clave mal configurada y no un problema de la sesión (log `ai.upstream_unauthorized`).
 
-Hoy ese archivo no define esas claves, así que el Worker sigue teniendo URL pública. Al cerrarlo:
+Orden para activar la clave sin cortar la IA:
 
-- `https://logosagent-api.ekiolivier.workers.dev` deja de responder, incluido `/health`.
-- `biblia-web` sigue llamándolo por el binding `API`.
-- La app móvil se queda sin IA. El dueño ya aceptó eso: no hay que esperar una build móvil. `features.ts` no existe, así que no hay un flag para ocultar el botón antes.
-- Los endpoints `/admin/*` de indexación solo se pueden usar con `wrangler dev --remote` en ese repo.
-- Para volver atrás: `npx wrangler rollback` en cada Worker. Para reabrir la API, `workers_dev = true` y un deploy de ese repo.
+1. Generar un valor aleatorio, por ejemplo con `openssl rand -base64 32`.
+2. `npx wrangler secret put LOGOSAGENT_API_KEY` en `biblia-web` y desplegar `biblia-web`. La versión vieja de `logosagent-api` ignora el header mientras no tenga clave.
+3. `npx wrangler secret put API_ACCESS_KEY` en `logosagent-api`, con el mismo valor.
+4. Desplegar la versión de `logosagent-api` que exige la clave.
+
+Para volver atrás: `npx wrangler rollback` en cada Worker.
 
 El binding exige que `logosagent-api` esté en la misma cuenta (`8096ee9cb07e2778b55e8057e09b23fb`). En `vite dev` el binding está en `remote: true` y habla con el Worker ya desplegado.

@@ -41,7 +41,7 @@
     "ACCESS_POLICY_ID": "79452e7b-87ff-4117-8727-0b9da93c83f6"
   },
   "secrets": {
-    "required": ["OIDC_CLIENT_SECRET", "SESSION_SECRET", "ADMIN_EMAIL", "CF_API_TOKEN"]
+    "required": ["OIDC_CLIENT_SECRET", "SESSION_SECRET", "ADMIN_EMAIL", "CF_API_TOKEN", "LOGOSAGENT_API_KEY"]
   },
   "observability": {
     "enabled": true,

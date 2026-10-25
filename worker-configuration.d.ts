@@ -12,6 +12,7 @@ interface __BaseEnv_Env {
 	SESSION_SECRET: string;
 	ADMIN_EMAIL: string;
 	CF_API_TOKEN: string;
+	LOGOSAGENT_API_KEY: string;
 	API: Fetcher /* logosagent-api */;
 }
 declare namespace Cloudflare {
@@ -22,7 +23,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "OIDC_ISSUER" | "OIDC_CLIENT_ID" | "CF_ACCOUNT_ID" | "ACCESS_POLICY_ID" | "OIDC_CLIENT_SECRET" | "SESSION_SECRET" | "ADMIN_EMAIL" | "CF_API_TOKEN">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "OIDC_ISSUER" | "OIDC_CLIENT_ID" | "CF_ACCOUNT_ID" | "ACCESS_POLICY_ID" | "OIDC_CLIENT_SECRET" | "SESSION_SECRET" | "ADMIN_EMAIL" | "CF_API_TOKEN" | "LOGOSAGENT_API_KEY">> {}
 }
 declare module "*.txt" {
 	const value: string;
