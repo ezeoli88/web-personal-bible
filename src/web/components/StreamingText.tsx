@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { parseMarkdownWithOffsets } from "../../core/lib/markdown";
 import { usePrefersReducedMotion } from "../hooks/usePrefersReducedMotion";
 import { MarkdownText, segmentClassName } from "./MarkdownText";
@@ -14,6 +14,12 @@ const FADE_MS = 420;
 
 function now(): number {
   return typeof performance !== "undefined" ? performance.now() : Date.now();
+}
+
+// El retraso queda fijo al montar: cambiar animation-delay con la animación en curso adelanta su progreso.
+function Fresh({ age, children }: { age: number; children: string }) {
+  const [delay] = useState(age);
+  return <span className={styles.fresh} style={{ animationDelay: `-${delay}ms` }}>{children}</span>;
 }
 
 export function StreamingText({ text, isStreaming }: Props) {
@@ -41,15 +47,15 @@ export function StreamingText({ text, isStreaming }: Props) {
         const parts: ReactNode[] = [];
         let run = "";
         let runTime: number | null = null;
+        let runStart = 0;
         const flush = () => {
           if (!run) return;
           if (runTime === null) {
             parts.push(run);
           } else {
+            // La clave es el índice en el texto fuente: cada fragmento conserva su elemento y su animación.
             const age = Math.max(0, Math.round(renderedAt - runTime));
-            parts.push(
-              <span key={parts.length} className={styles.fresh} style={{ animationDelay: `-${age}ms` }}>{run}</span>,
-            );
+            parts.push(<Fresh key={runStart} age={age}>{run}</Fresh>);
           }
           run = "";
         };
@@ -65,6 +71,7 @@ export function StreamingText({ text, isStreaming }: Props) {
           if (time !== runTime) {
             flush();
             runTime = time;
+            runStart = sourceIndex;
           }
           run += char;
         }
