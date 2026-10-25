@@ -39,6 +39,7 @@ export function useBibleAiPanel(options: {
   const [response, setResponse] = useState("");
   const [notes, setNotes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [stopped, setStopped] = useState(false);
   const requestControllerRef = useRef<AbortController | null>(null);
   const words = useWordsAnalysis();
 
@@ -126,6 +127,7 @@ export function useBibleAiPanel(options: {
     setError(null);
     setResponse("");
     setNotes([]);
+    setStopped(false);
     if (mode === "words") {
       words.reset();
       setViewState("words");
@@ -138,14 +140,20 @@ export function useBibleAiPanel(options: {
     setViewState("loading");
     try {
       await askBibleAIStream(passage, mode, {
-        onStart: () => setViewState("streaming"),
-        onText: (_chunk, accumulated) => setResponse(accumulated),
+        onStart: () => {
+          if (requestControllerRef.current === controller) setViewState("streaming");
+        },
+        onText: (_chunk, accumulated) => {
+          if (requestControllerRef.current === controller) setResponse(accumulated);
+        },
         onEnd: (event) => {
+          if (requestControllerRef.current !== controller) return;
           setResponse(event.fullContent);
           setNotes(event.notes || []);
           setViewState("response");
         },
         onError: (requestError) => {
+          if (requestControllerRef.current !== controller) return;
           if (applyAccessError(requestError)) return;
           setError(explain(requestError));
           setViewState("response");
@@ -153,6 +161,7 @@ export function useBibleAiPanel(options: {
       }, { signal: controller.signal });
     } catch (requestError) {
       if (requestError instanceof BibleAIClientError && requestError.code === "REQUEST_ABORTED") return;
+      if (requestControllerRef.current !== controller) return;
       if (!applyAccessError(requestError)) setViewState("response");
     } finally {
       if (requestControllerRef.current === controller) requestControllerRef.current = null;
@@ -165,9 +174,20 @@ export function useBibleAiPanel(options: {
     setResponse("");
     setNotes([]);
     setError(null);
+    setStopped(false);
     setCurrentMode(null);
     words.reset();
   }, [stopRequest, words]);
+
+  const stopResponse = useCallback(() => {
+    if (!response) {
+      backToMenu();
+      return;
+    }
+    stopRequest();
+    setStopped(true);
+    setViewState("response");
+  }, [backToMenu, response, stopRequest]);
 
   const copyResponse = useCallback(async () => {
     if (!response) return;
@@ -188,11 +208,13 @@ export function useBibleAiPanel(options: {
     response,
     notes,
     error,
+    stopped,
     words,
     labels: AI_MODE_LABELS,
     loadMenu,
     selectMode,
     backToMenu,
+    stopResponse,
     copyResponse,
   };
 }

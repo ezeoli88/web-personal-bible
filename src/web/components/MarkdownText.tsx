@@ -1,9 +1,21 @@
 import clsx from "clsx";
-import { parseMarkdown } from "../../core/lib/markdown";
+import { parseMarkdown, type ParsedSegment } from "../../core/lib/markdown";
 import styles from "./MarkdownText.module.css";
 
 interface Props {
   children: string;
+}
+
+export function segmentClassName(segment: ParsedSegment): string {
+  return clsx(
+    segment.bold && styles.bold,
+    segment.italic && styles.italic,
+    segment.heading > 0 && styles.heading,
+    segment.heading === 1 && styles.h1,
+    segment.heading === 2 && styles.h2,
+    segment.heading === 3 && styles.h3,
+    segment.heading >= 4 && styles.h4,
+  );
 }
 
 export function MarkdownText({ children }: Props) {
@@ -13,16 +25,7 @@ export function MarkdownText({ children }: Props) {
     <div className={styles.text}>
       {segments.map((segment, index) => {
         if (segment.text === "\n") return <br key={index} />;
-        const className = clsx(
-          segment.bold && styles.bold,
-          segment.italic && styles.italic,
-          segment.heading > 0 && styles.heading,
-          segment.heading === 1 && styles.h1,
-          segment.heading === 2 && styles.h2,
-          segment.heading === 3 && styles.h3,
-          segment.heading >= 4 && styles.h4,
-        );
-        return <span key={index} className={className}>{segment.text}</span>;
+        return <span key={index} className={segmentClassName(segment)}>{segment.text}</span>;
       })}
     </div>
   );
