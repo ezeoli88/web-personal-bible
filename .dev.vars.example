@@ -6,3 +6,5 @@ ADMIN_EMAIL=ekiolivier@gmail.com
 SESSION_SECRET=local-only-session-secret-change-me-32b
 OIDC_CLIENT_SECRET=local-only-not-used-with-bypass
 CF_API_TOKEN=local-only-not-a-real-token
+# Value of logosagent-api's API_ACCESS_KEY. `vite dev` calls the deployed Worker, so AI returns 502 locally without it.
+LOGOSAGENT_API_KEY=

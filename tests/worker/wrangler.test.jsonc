@@ -28,6 +28,7 @@
     "SESSION_SECRET": "test-session-secret-at-least-32-bytes",
     "ADMIN_EMAIL": "ekiolivier@gmail.com",
     "CF_API_TOKEN": "test-cf-token",
+    "LOGOSAGENT_API_KEY": "test-logosagent-key",
     "DEV_AUTH_BYPASS": "true",
     "DEV_USER_EMAIL": "ekiolivier@gmail.com"
   }
