@@ -44,7 +44,7 @@ Los módulos de `src/core/` salen de [app-ntv-personal](https://github.com/ezeol
 | `src/core/lib/ids.ts` | extraído de `BollsBibleRepository` |
 | `src/core/lib/markdown.ts` | extraído de `MarkdownText` |
 | `src/core/lib/bookSlugs.ts` | nuevo: slugs en español sin tildes |
-| `src/core/lib/aiClient.ts` | misma superficie, transporte `fetch` + SSE al mismo origen. Se eliminó `askBibleAI` |
+| `src/core/lib/aiClient.ts` | misma superficie, transporte `fetch` + SSE al mismo origen. Se eliminó `askBibleAI` y se agregó `defineWordsStreamWithoutLexicon` |
 | `src/core/hooks/useBibleQueries.ts` | `src/hooks/useBibleQueries.ts` |
 | `src/core/hooks/useBibleAISelection.ts` | `src/hooks/useBibleAISelection.ts` |
 | `src/core/hooks/useWordsAnalysis.ts` | `src/hooks/useWordsAnalysis.ts` |

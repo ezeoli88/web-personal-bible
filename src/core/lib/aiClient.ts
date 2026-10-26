@@ -1,5 +1,6 @@
 // Ported from biblia-ntv-app/src/lib/aiClient.ts
-// Same exports and signatures, except the deprecated askBibleAI. Transport is same-origin fetch.
+// Same exports and signatures, except the deprecated askBibleAI and the added
+// defineWordsStreamWithoutLexicon. Transport is same-origin fetch.
 import { EventSourceParserStream } from "eventsource-parser/stream";
 import type { EventSourceMessage } from "eventsource-parser/stream";
 import {
@@ -7,6 +8,7 @@ import {
   type AIMode,
   type APIError,
   type BiblePassage,
+  type IdentifiedWord,
   type StreamCallbacks,
   type StreamErrorEvent,
   type StreamEvent,
@@ -226,6 +228,35 @@ export function defineWordsStream(
   }
   return streamRequest(
     { mode: "words", step: "define", useLexicon: true, selectedTokenIds, passage },
+    callbacks,
+    options,
+    "Error de conexión. Verificá tu internet.",
+  );
+}
+
+/** Define words identified without the lexicon (they have no tokenId). */
+export function defineWordsStreamWithoutLexicon(
+  passage: BiblePassage,
+  selectedWords: IdentifiedWord[],
+  callbacks: WordsDefineCallbacks,
+  options: FetchOptions = {},
+): Promise<void> {
+  if (selectedWords.length === 0) {
+    return Promise.reject(new BibleAIClientError(
+      "Seleccioná al menos una palabra.",
+      "EMPTY_WORD_SELECTION",
+    ));
+  }
+  return streamRequest(
+    {
+      mode: "words",
+      step: "define",
+      useLexicon: false,
+      selectedWords: selectedWords.map(({ spanish, original, transliteration, language }) => (
+        { spanish, original, transliteration, language }
+      )),
+      passage,
+    },
     callbacks,
     options,
     "Error de conexión. Verificá tu internet.",

@@ -42,6 +42,10 @@ export function WordList({ words, onWordPress, passageReference, source }: Props
           <span className={styles.verifiedIcon} aria-hidden="true">✓</span>
           Texto original y referencias del léxico bíblico
         </p>
+      ) : source === "llm" ? (
+        <p className={styles.header} data-testid="unverified-words-note">
+          Este pasaje no se pudo analizar con el léxico: la IA identificó estas palabras sin verificarlas.
+        </p>
       ) : null}
       <p className={styles.header}>Tocá una palabra para ver su explicación</p>
       {Array.from(groups, ([reference, entries]) => {
