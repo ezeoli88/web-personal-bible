@@ -1,12 +1,29 @@
 // Ported from biblia-ntv-app/src/hooks/useWordsAnalysis.ts
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { BibleAIClientError, defineWordsStream, identifyWords } from "../lib/aiClient";
+import {
+  BibleAIClientError,
+  defineWordsStream,
+  defineWordsStreamWithoutLexicon,
+  identifyWords,
+} from "../lib/aiClient";
 import { WORD_DEFINITION_CACHE_TTL, wordDefinitionQueryKey } from "../lib/wordDefinitionsCache";
 import type { CachedWordDefinition } from "../lib/wordDefinitionsCache";
 import type { BiblePassage, WordEntry, WordsLanguage } from "../types/ai";
 
 type WordsFlowStep = "idle" | "identifying" | "browsing" | "defining" | "complete" | "error";
+
+/** Lexicon failures after which the server can still identify words with AI alone. */
+const LEXICON_FALLBACK_CODES = new Set(["INVALID_REFERENCE", "LEXICON_NOT_FOUND", "LEXICON_ERROR"]);
+
+async function identifyWithFallback(passage: BiblePassage, signal: AbortSignal) {
+  try {
+    return await identifyWords(passage, true, { signal });
+  } catch (err) {
+    if (!(err instanceof BibleAIClientError) || !LEXICON_FALLBACK_CODES.has(err.code ?? "")) throw err;
+    return identifyWords(passage, false, { signal });
+  }
+}
 
 export function useWordsAnalysis() {
   const queryClient = useQueryClient();
@@ -39,7 +56,7 @@ export function useWordsAnalysis() {
     setLanguage(null);
 
     try {
-      const response = await identifyWords(passage, true, { signal: controller.signal });
+      const response = await identifyWithFallback(passage, controller.signal);
       if (requestControllerRef.current !== controller) return;
       setWords(response.words);
       setSource(response.source === "lexicon" ? "lexicon" : "llm");
@@ -66,10 +83,8 @@ export function useWordsAnalysis() {
     setNotes([]);
 
     try {
-      if (!word.tokenId) {
-        throw new Error("El servidor no devolvió un identificador válido para esta palabra.");
-      }
-      const queryKey = wordDefinitionQueryKey(passage, word.tokenId);
+      // Words identified without the lexicon have no tokenId.
+      const queryKey = wordDefinitionQueryKey(passage, word.tokenId ?? `llm:${word.language}:${word.original}`);
       const cached = queryClient.getQueryState<CachedWordDefinition>(queryKey);
       const age = cached ? Date.now() - cached.dataUpdatedAt : Infinity;
       if (cached?.data && !cached.isInvalidated && age >= 0 && age < WORD_DEFINITION_CACHE_TTL) {
@@ -80,27 +95,25 @@ export function useWordsAnalysis() {
       }
       if (cached) queryClient.removeQueries({ queryKey, exact: true });
       let completed: CachedWordDefinition | undefined;
-      await defineWordsStream(
-        passage,
-        [word.tokenId],
-        {
-          onText: (_chunk, accumulated) => {
-            if (requestControllerRef.current === controller) setDefinitions(accumulated);
-          },
-          onEnd: (event) => {
-            if (requestControllerRef.current !== controller) return;
-            if (event.fullContent.trim()) {
-              completed = { fullContent: event.fullContent, notes: event.notes || [] };
-            }
-          },
-          onError: (err) => {
-            if (requestControllerRef.current !== controller) return;
-            setError(err.message);
-            setStep("error");
-          },
+      const callbacks: Parameters<typeof defineWordsStream>[2] = {
+        onText: (_chunk, accumulated) => {
+          if (requestControllerRef.current === controller) setDefinitions(accumulated);
         },
-        { signal: controller.signal },
-      );
+        onEnd: (event) => {
+          if (requestControllerRef.current !== controller) return;
+          if (event.fullContent.trim()) {
+            completed = { fullContent: event.fullContent, notes: event.notes || [] };
+          }
+        },
+        onError: (err) => {
+          if (requestControllerRef.current !== controller) return;
+          setError(err.message);
+          setStep("error");
+        },
+      };
+      await (word.tokenId
+        ? defineWordsStream(passage, [word.tokenId], callbacks, { signal: controller.signal })
+        : defineWordsStreamWithoutLexicon(passage, [word], callbacks, { signal: controller.signal }));
       if (requestControllerRef.current !== controller || controller.signal.aborted) return;
       if (!completed) throw new Error("El servidor no devolvió una definición completa. Volvé a intentarlo.");
       queryClient.setQueryData(queryKey, completed);

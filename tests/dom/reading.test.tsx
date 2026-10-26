@@ -99,6 +99,19 @@ describe("WordList", () => {
     fireEvent.click(screen.getByTestId("word-item"));
     expect(onWordPress).toHaveBeenCalledWith(word);
   });
+
+  it("warns when the words come from the AI fallback", () => {
+    const word: WordEntry = {
+      spanish: "mundo",
+      original: "κόσμον",
+      transliteration: "kosmon",
+      language: "greek",
+      hint: "el mundo",
+    };
+    render(<WordList words={[word]} passageReference="Juan 3:16" source="llm" onWordPress={vi.fn()} />);
+    expect(screen.getByTestId("unverified-words-note")).toBeInTheDocument();
+    expect(screen.queryByText("Texto original y referencias del léxico bíblico")).not.toBeInTheDocument();
+  });
 });
 
 describe("LoginPrompt", () => {
