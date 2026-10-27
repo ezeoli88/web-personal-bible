@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { askBibleAIStream, BibleAIClientError, getBibleAIMenu } from "../../src/core/lib/aiClient";
+import { ASK_HISTORY_TURNS, askBibleAIStream, askPassageStream, BibleAIClientError, getBibleAIMenu } from "../../src/core/lib/aiClient";
 import type { BiblePassage } from "../../src/core/types/ai";
 
 const passage: BiblePassage = {
@@ -83,5 +83,27 @@ describe("aiClient", () => {
   it("rejects a menu payload that is not a menu", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ type: "answer" })));
     await expect(getBibleAIMenu(passage)).rejects.toMatchObject({ code: "INVALID_MENU_RESPONSE" });
+  });
+});
+
+describe("askPassageStream", () => {
+  it("sends the question with only the last turns", async () => {
+    const fetchMock = vi.fn(async () => sse([
+      'data: {"type":"start","mode":"ask"}\n\n',
+      'data: {"type":"end","mode":"ask","fullContent":"Sí [16]."}\n\n',
+    ]));
+    vi.stubGlobal("fetch", fetchMock);
+    const history = Array.from({ length: 8 }, (_, index) => ({
+      role: index % 2 === 0 ? "user" as const : "assistant" as const,
+      content: `turno ${index}`,
+    }));
+    const onEnd = vi.fn();
+    await askPassageStream(passage, "¿Amó Dios al mundo?", history, { onEnd });
+
+    const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+    expect(body).toMatchObject({ mode: "ask", question: "¿Amó Dios al mundo?", passage });
+    expect(body.history).toHaveLength(ASK_HISTORY_TURNS);
+    expect(body.history[0]).toEqual({ role: "user", content: "turno 2" });
+    expect(onEnd).toHaveBeenCalledWith(expect.objectContaining({ fullContent: "Sí [16]." }));
   });
 });

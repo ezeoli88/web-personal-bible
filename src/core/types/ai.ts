@@ -10,7 +10,13 @@ export interface BiblePassage {
   }>;
 }
 
-export type AIMode = "reflection" | "history" | "words" | "structure";
+export type AIMode = "reflection" | "history" | "words" | "structure" | "ask";
+
+/** One earlier turn of a conversation about a passage. */
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
 
 export interface AIMenuOption {
   id: AIMode;
@@ -182,13 +188,22 @@ export const AI_MODE_LABELS: Record<AIMode, { emoji: string; label: string; desc
     label: "Estructura",
     description: "Análisis de la estructura literaria",
   },
+  ask: {
+    emoji: "💬",
+    label: "Preguntale al pasaje",
+    description: "Tus preguntas, respondidas desde el texto",
+  },
 };
 
-/** Same content as logosagent-api's fixed MENU_RESPONSE: the web builds it instead of requesting it. */
+/**
+ * Same content as logosagent-api's fixed MENU_RESPONSE, plus «Preguntale al pasaje»,
+ * which the web opens as a chat instead of a single answer.
+ */
 export const AI_MENU: AIMenuResponse = {
   type: "menu",
   title: "¿Qué te gustaría hacer con este pasaje?",
   options: [
+    { id: "ask", label: "Preguntale al pasaje", hint: "Hacé tus preguntas y seguí la conversación" },
     { id: "reflection", label: "Reflexión breve", hint: "Idea + aplicación + pregunta" },
     { id: "history", label: "Contexto histórico", hint: "2–4 puntos culturales/históricos" },
     { id: "words", label: "Palabras clave (hebreo/griego)", hint: "Palabras por versículo y sus significados" },

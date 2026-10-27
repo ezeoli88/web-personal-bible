@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import clsx from "clsx";
 import type { BiblePassage } from "../../core/types/ai";
 import { LoginPrompt } from "../auth/LoginPrompt";
+import { AskPassageChat } from "./AskPassageChat";
 import { useBibleAiPanel, type PanelAccess } from "../hooks/useBibleAiPanel";
 import { MarkdownText } from "./MarkdownText";
 import { PassageReading } from "./PassageReading";
@@ -132,6 +133,10 @@ export function BibleAiPanel({ open, passage, access, onClose, onLogin }: Props)
             })}
             {panel.menuFooter ? <p className={styles.footerNote}>{panel.menuFooter}</p> : null}
           </div>
+        ) : null}
+
+        {panel.viewState === "ask" && passage ? (
+          <AskPassageChat passage={passage} chat={panel.chat} onBack={panel.backToMenu} />
         ) : null}
 
         {panel.viewState === "words" && passage ? (

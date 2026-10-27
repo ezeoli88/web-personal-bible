@@ -8,6 +8,7 @@ import {
   type AIMode,
   type APIError,
   type BiblePassage,
+  type ChatTurn,
   type IdentifiedWord,
   type StreamCallbacks,
   type StreamErrorEvent,
@@ -170,6 +171,25 @@ export function askBibleAIStream(
 ): Promise<void> {
   return streamRequest(
     { passage, mode },
+    callbacks,
+    options,
+    "Error de conexión. Verificá tu internet.",
+  );
+}
+
+/** Turns sent with a question; logosagent-api keeps the same number. */
+export const ASK_HISTORY_TURNS = 6;
+
+/** Asks a free question about the passage, with the earlier turns of the conversation. */
+export function askPassageStream(
+  passage: BiblePassage,
+  question: string,
+  history: ChatTurn[],
+  callbacks: StreamCallbacks,
+  options: FetchOptions = {},
+): Promise<void> {
+  return streamRequest(
+    { passage, mode: "ask", question, history: history.slice(-ASK_HISTORY_TURNS) },
     callbacks,
     options,
     "Error de conexión. Verificá tu internet.",

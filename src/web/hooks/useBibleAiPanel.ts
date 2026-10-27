@@ -6,6 +6,7 @@ import { TRANSLATION_LABELS } from "../../core/types/translation";
 import { isOnline } from "../../platform/network";
 import { copyText } from "../../platform/clipboard";
 import { notify } from "../../platform/notify";
+import { useAskPassage } from "./useAskPassage";
 
 export type PanelAccess = "loading" | "anonymous" | "denied" | "allowed";
 
@@ -17,7 +18,8 @@ export type PanelView =
   | "loading"
   | "streaming"
   | "response"
-  | "words";
+  | "words"
+  | "ask";
 
 export function useBibleAiPanel(options: {
   open: boolean;
@@ -61,6 +63,9 @@ export function useBibleAiPanel(options: {
     return false;
   }, []);
 
+  const chat = useAskPassage({ passage, onAccessError: applyAccessError });
+  const resetChat = chat.reset;
+
   useEffect(() => {
     if (!open) return;
     if (access === "loading") {
@@ -84,8 +89,9 @@ export function useBibleAiPanel(options: {
     setViewState("menu");
     return () => {
       stopRequest();
+      resetChat();
     };
-  }, [access, open, passage, stopRequest]);
+  }, [access, open, passage, resetChat, stopRequest]);
 
   const selectMode = useCallback(async (mode: AIMode) => {
     if (!passage) return;
@@ -98,6 +104,11 @@ export function useBibleAiPanel(options: {
     setResponse("");
     setNotes([]);
     setStopped(false);
+    if (mode === "ask") {
+      resetChat();
+      setViewState("ask");
+      return;
+    }
     if (mode === "words") {
       words.reset();
       setViewState("words");
@@ -136,7 +147,7 @@ export function useBibleAiPanel(options: {
     } finally {
       if (requestControllerRef.current === controller) requestControllerRef.current = null;
     }
-  }, [applyAccessError, explain, passage, stopRequest, words]);
+  }, [applyAccessError, explain, passage, resetChat, stopRequest, words]);
 
   const backToMenu = useCallback(() => {
     stopRequest();
@@ -147,7 +158,8 @@ export function useBibleAiPanel(options: {
     setStopped(false);
     setCurrentMode(null);
     words.reset();
-  }, [stopRequest, words]);
+    resetChat();
+  }, [resetChat, stopRequest, words]);
 
   const stopResponse = useCallback(() => {
     if (!response) {
@@ -180,6 +192,7 @@ export function useBibleAiPanel(options: {
     error,
     stopped,
     words,
+    chat,
     labels: AI_MODE_LABELS,
     selectMode,
     backToMenu,
