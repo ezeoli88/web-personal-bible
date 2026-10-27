@@ -211,3 +211,32 @@ export const AI_MENU: AIMenuResponse = {
   ],
   footer: "Elegí una opción para continuar.",
 };
+
+/** A word's card from the lexicon, with where else it appears (no AI involved). */
+export interface WordStudyResponse {
+  type: "word-study";
+  mode: "words";
+  step: "study";
+  reference?: string;
+  word: {
+    tokenId: string;
+    reference: string;
+    original: string;
+    lemma: string;
+    transliteration: string;
+    strong: string | null;
+    pos: string;
+    parsing: string;
+    def: string;
+    language: WordsLanguage;
+  };
+  occurrences: {
+    by: "strong" | "lemma";
+    total: number;
+    verses: number;
+    testament: "OT" | "NT";
+    /** Most frequent first; bookNumber is 1–66 as in bolls.life. */
+    byBook: Array<{ book: string; bookNumber: number; count: number }>;
+    examples: Array<{ reference: string; bookNumber: number; chapter: number; verse: number }>;
+  };
+}

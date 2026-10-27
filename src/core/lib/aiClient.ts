@@ -17,6 +17,7 @@ import {
   type WordsDefineErrorEvent,
   type WordsDefineStartEvent,
   type WordsIdentifyResponse,
+  type WordStudyResponse,
 } from "../types/ai";
 
 const ENDPOINT = "/api/bible-ai/stream";
@@ -224,6 +225,45 @@ export async function identifyWords(
       throw new BibleAIClientError("Respuesta inválida al identificar palabras.", "INVALID_WORDS_RESPONSE");
     }
     return payload as WordsIdentifyResponse;
+  } catch (error) {
+    if (error instanceof BibleAIClientError) throw error;
+    if (error instanceof Error && error.name === "AbortError") throw getAbortError(signal);
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+    cleanup();
+  }
+}
+
+/** One lexicon word's card and concordance. */
+export async function getWordStudy(
+  passage: BiblePassage,
+  tokenId: string,
+  options: FetchOptions = {},
+): Promise<WordStudyResponse> {
+  const { timeout = TIMEOUT_MS, signal } = options;
+  const { controller, cleanup } = createRequestController(signal);
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({ mode: "words", step: "study", useLexicon: true, selectedTokenIds: [tokenId], passage }),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      throw await responseToError(response, "Error cargando el estudio de la palabra");
+    }
+    const payload: unknown = await response.json();
+    if (
+      typeof payload !== "object" ||
+      payload === null ||
+      (payload as WordStudyResponse).type !== "word-study" ||
+      !Array.isArray((payload as WordStudyResponse).occurrences?.byBook)
+    ) {
+      throw new BibleAIClientError("Respuesta inválida del estudio de palabra.", "INVALID_WORD_STUDY_RESPONSE");
+    }
+    return payload as WordStudyResponse;
   } catch (error) {
     if (error instanceof BibleAIClientError) throw error;
     if (error instanceof Error && error.name === "AbortError") throw getAbortError(signal);

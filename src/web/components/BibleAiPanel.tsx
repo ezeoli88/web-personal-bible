@@ -3,6 +3,7 @@ import clsx from "clsx";
 import type { BiblePassage } from "../../core/types/ai";
 import type { AiQuota } from "../auth/useMe";
 import { LoginPrompt } from "../auth/LoginPrompt";
+import { WordStudyCard } from "../wordStudy/WordStudyCard";
 import { AskPassageChat } from "./AskPassageChat";
 import { useBibleAiPanel, type PanelAccess } from "../hooks/useBibleAiPanel";
 import { MarkdownText } from "./MarkdownText";
@@ -194,6 +195,9 @@ export function BibleAiPanel({ open, passage, access, quota, onClose, onLogin }:
                   ) : (
                     <StreamingText text={panel.words.definitions} isStreaming={wordsStep === "defining"} />
                   )}
+                  {wordsStep === "complete" && activeWord?.tokenId ? (
+                    <WordStudyCard passage={passage} tokenId={activeWord.tokenId} onNavigate={onClose} />
+                  ) : null}
                   {panel.words.notes.map((note) => <p key={note} className={styles.note}>• {note}</p>)}
                 </div>
                 <div className={styles.actions}>

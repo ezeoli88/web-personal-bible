@@ -9,7 +9,7 @@ interface Props {
   source?: "lexicon" | "llm" | null;
 }
 
-function formatPOS(pos: string): string {
+export function formatPOS(pos: string): string {
   const labels: Record<string, string> = {
     verb: "Verbo",
     noun: "Sustantivo",

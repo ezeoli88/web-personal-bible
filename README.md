@@ -94,7 +94,7 @@ Si la base todavía no tiene tablas, o hay migraciones nuevas en `migrations/`: 
 
 ## Cupo de IA
 
-Cada lector habilitado tiene 100 consultas de IA por mes calendario (UTC), en todos los modos (`AI_MONTHLY_LIMIT` en `worker/db/aiUsage.ts`). El admin no tiene cupo. El proxy cuenta la consulta en la tabla `ai_usage` antes de llamar a `logosagent-api` y la devuelve si la API falla o la rechaza. Sin cupo responde `429 MONTHLY_QUOTA_EXCEEDED`. `/api/me` devuelve `aiQuota` (`limit`, `used`, `remaining`, `resetsAt`) y el panel de IA muestra cuántas quedan.
+Cada lector habilitado tiene 100 consultas de IA por mes calendario (UTC), en todos los modos (`AI_MONTHLY_LIMIT` en `worker/db/aiUsage.ts`). El admin no tiene cupo y el estudio de palabra (`step: "study"`, sale del léxico sin usar el modelo) no lo consume. El proxy cuenta la consulta en la tabla `ai_usage` antes de llamar a `logosagent-api` y la devuelve si la API falla o la rechaza. Sin cupo responde `429 MONTHLY_QUOTA_EXCEEDED`. `/api/me` devuelve `aiQuota` (`limit`, `used`, `remaining`, `resetsAt`) y el panel de IA muestra cuántas quedan.
 
 «Preguntale al pasaje» además admite 3 preguntas por conversación, con respuestas breves (lo controla `logosagent-api`).
 
