@@ -11,20 +11,20 @@
 }
 .countText { margin: 0; text-align: center; color: var(--color-textSecondary); font-size: 13px; }
 .actions { display: flex; gap: var(--space-s); }
-.cancelButton, .compareButton, .aiButton {
+.cancelButton, .compareButton, .shareButton, .aiButton {
   border-radius: var(--radius-m);
   padding: var(--space-m);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 }
-.compareButton {
+.compareButton, .shareButton {
   flex: 1;
   background: var(--color-background);
   color: var(--color-primary);
   border: 1px solid var(--color-primary);
 }
-.compareButton:disabled {
+.compareButton:disabled, .shareButton:disabled {
   color: var(--color-textTertiary);
   border-color: var(--color-border);
   cursor: not-allowed;
@@ -40,4 +40,11 @@
   border: 0;
   background: var(--color-primary);
   color: var(--color-onPrimary);
+}
+
+/* On phones the secondary actions take one row and the AI button the next. */
+@media (max-width: 599px) {
+  .actions { flex-wrap: wrap; }
+  .cancelButton, .compareButton, .shareButton { flex: 1 1 0; min-width: 0; padding: var(--space-s); }
+  .aiButton { flex: 1 0 100%; }
 }

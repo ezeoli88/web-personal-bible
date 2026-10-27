@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { BollsTranslationUnavailableError } from "../../core/api/BollsBibleClient";
 import { useBibleRepository } from "../../core/hooks/DatabaseProvider";
@@ -12,6 +12,7 @@ import type { ChapterNavigationInfo, Verse } from "../../core/types/bible";
 import { TRANSLATION_NOTICES, type BibleTranslation } from "../../core/types/translation";
 import { isOnline } from "../../platform/network";
 import { notify } from "../../platform/notify";
+import { shareOrCopy } from "../../platform/share";
 import { useAuth } from "../auth/AuthProvider";
 import { clearPendingSelection, readPendingSelection, savePendingSelection } from "../auth/pendingSelection";
 import { BibleAiPanel } from "../components/BibleAiPanel";
@@ -22,6 +23,8 @@ import { TranslationSelector } from "../components/TranslationSelector";
 import { VerseCompareSheet } from "../components/VerseCompareSheet";
 import { VerseItem } from "../components/VerseItem";
 import type { PanelAccess } from "../hooks/useBibleAiPanel";
+import { formatVerseParam } from "../layout/bookRoute";
+import { buildVerseShare } from "../share/verseShare";
 import styles from "./pages.module.css";
 
 interface Props {
@@ -30,7 +33,8 @@ interface Props {
   chapterId: string;
   chapterNumber: number;
   slug: string;
-  focusVerseNumber?: number;
+  /** Verses named in the link (`?v=`): highlighted, and the first one scrolled into view. */
+  focusVerses?: number[];
 }
 
 export function ChapterReaderPage({
@@ -39,7 +43,7 @@ export function ChapterReaderPage({
   chapterId,
   chapterNumber,
   slug,
-  focusVerseNumber,
+  focusVerses,
 }: Props) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -54,6 +58,7 @@ export function ChapterReaderPage({
   const [footnotesOpen, setFootnotesOpen] = useState(false);
   const [compareVerses, setCompareVerses] = useState<Verse[]>([]);
   const restored = useRef(false);
+  const focused = useMemo(() => new Set(focusVerses), [focusVerses]);
 
   const footnotes = verses
     .filter((verse) => verse.footnote)
@@ -79,9 +84,10 @@ export function ChapterReaderPage({
   }, [chapterId, translation, selection.clearSelection]);
 
   useEffect(() => {
-    if (!focusVerseNumber || verses.length === 0) return;
-    document.getElementById(`verse-${focusVerseNumber}`)?.scrollIntoView({ block: "center" });
-  }, [focusVerseNumber, verses]);
+    const first = focusVerses?.[0];
+    if (!first || verses.length === 0) return;
+    document.getElementById(`verse-${first}`)?.scrollIntoView({ block: "center" });
+  }, [focusVerses, verses]);
 
   useEffect(() => {
     if (restored.current || verses.length === 0) return;
@@ -156,16 +162,32 @@ export function ChapterReaderPage({
   }
 
   function handleCompareSelect(nextTranslation: BibleTranslation) {
-    const verseNumber = compareVerses[0]?.number;
+    const verseNumbers = compareVerses.map((verse) => verse.number);
     setCompareVerses([]);
     if (nextTranslation === translation) return;
     void setTranslation(nextTranslation);
     void navigate({
       to: "/$book/$chapter",
       params: { book: slug, chapter: String(chapterNumber) },
-      search: { v: verseNumber },
+      search: { v: formatVerseParam(verseNumbers) },
       resetScroll: false,
     });
+  }
+
+  async function handleShare() {
+    try {
+      const result = await shareOrCopy(buildVerseShare({
+        bookName,
+        chapterNumber,
+        slug,
+        translation,
+        verses: selection.selectedVerses,
+        origin: window.location.origin,
+      }));
+      if (result === "copied") notify("Copiado", "El pasaje y su enlace se copiaron al portapapeles.");
+    } catch (shareError) {
+      notify("No se pudo compartir", shareError instanceof Error ? shareError.message : "Probá de nuevo.");
+    }
   }
 
   function handleLogin() {
@@ -213,7 +235,7 @@ export function ChapterReaderPage({
         <VerseItem
           key={verse.id}
           verse={verse}
-          focused={verse.number === focusVerseNumber}
+          focused={focused.has(verse.number)}
           selected={selection.isSelected(verse.id)}
           selectionActive={selection.isSelectionActive}
           onPress={selection.toggleVerse}
@@ -235,6 +257,7 @@ export function ChapterReaderPage({
           maxCount={selection.maxSelectable}
           onAskAI={() => void handleAskAI()}
           onCompare={() => setCompareVerses([...selection.selectedVerses].sort((a, b) => a.number - b.number))}
+          onShare={() => void handleShare()}
           onCancel={selection.clearSelection}
         />
       ) : null}
