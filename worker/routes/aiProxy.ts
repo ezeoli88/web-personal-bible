@@ -1,5 +1,6 @@
 import type { Hono } from "hono";
 import { requireAllowed, requireSession } from "../auth/middleware";
+import { AI_MONTHLY_LIMIT, consumeAiQuota, refundAiQuota, type AiQuota } from "../db/aiUsage";
 import { apiError, logEvent, MAX_AI_BODY_BYTES, readLimitedBody } from "../lib/http";
 import type { AppDeps, AppEnv } from "../app-env";
 
@@ -37,6 +38,29 @@ export function registerAiProxy(app: Hono<AppEnv>, deps: AppDeps): void {
       return apiError(c, 502, "UPSTREAM_UNAVAILABLE", UNAVAILABLE_MESSAGE);
     }
 
+    // The monthly quota is counted before calling the API and given back if
+    // the API fails or rejects the request, so only answers count.
+    let quota: AiQuota | null = null;
+    if (c.get("role") !== "admin") {
+      quota = await consumeAiQuota(c.env.DB, email);
+      if (!quota) {
+        return apiError(
+          c,
+          429,
+          "MONTHLY_QUOTA_EXCEEDED",
+          `Usaste las ${AI_MONTHLY_LIMIT} consultas de IA de este mes. Se renuevan el 1.º del mes que viene.`,
+        );
+      }
+    }
+    const refund = async () => {
+      if (!quota) return;
+      try {
+        await refundAiQuota(c.env.DB, email);
+      } catch (error) {
+        logEvent("ai.quota_refund_failed", { error: error instanceof Error ? error.message : String(error) }, "error");
+      }
+    };
+
     const requestId = c.req.header("x-request-id") || crypto.randomUUID();
     const headers = new Headers();
     headers.set("content-type", "application/json");
@@ -54,6 +78,7 @@ export function registerAiProxy(app: Hono<AppEnv>, deps: AppDeps): void {
         body,
       });
       // Un 401 del Worker es una clave mal configurada, no un problema de la sesión del usuario.
+      if (upstream.status >= 400) await refund();
       if (upstream.status === 401) {
         await upstream.body?.cancel();
         logEvent("ai.upstream_unauthorized", { requestId }, "error");
@@ -64,10 +89,12 @@ export function registerAiProxy(app: Hono<AppEnv>, deps: AppDeps): void {
         const value = upstream.headers.get(name);
         if (value) responseHeaders.set(name, value);
       }
+      if (quota && upstream.status < 400) responseHeaders.set("x-ai-quota-remaining", String(quota.remaining));
       responseHeaders.set("cache-control", "no-cache, no-transform");
       responseHeaders.set("x-content-type-options", "nosniff");
       return new Response(upstream.body, { status: upstream.status, headers: responseHeaders });
     } catch (error) {
+      await refund();
       logEvent("ai.upstream_failed", {
         error: error instanceof Error ? error.message : String(error),
       }, "error");

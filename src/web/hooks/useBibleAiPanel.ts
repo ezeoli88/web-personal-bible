@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { askBibleAIStream, BibleAIClientError } from "../../core/lib/aiClient";
 import { useWordsAnalysis } from "../../core/hooks/useWordsAnalysis";
 import { AI_MENU, AI_MODE_LABELS, type AIMode, type BiblePassage } from "../../core/types/ai";
@@ -6,6 +7,8 @@ import { TRANSLATION_LABELS } from "../../core/types/translation";
 import { isOnline } from "../../platform/network";
 import { copyText } from "../../platform/clipboard";
 import { notify } from "../../platform/notify";
+import { meQueryKey } from "../auth/useMe";
+import { useAskPassage } from "./useAskPassage";
 
 export type PanelAccess = "loading" | "anonymous" | "denied" | "allowed";
 
@@ -17,7 +20,8 @@ export type PanelView =
   | "loading"
   | "streaming"
   | "response"
-  | "words";
+  | "words"
+  | "ask";
 
 export function useBibleAiPanel(options: {
   open: boolean;
@@ -33,6 +37,7 @@ export function useBibleAiPanel(options: {
   const [stopped, setStopped] = useState(false);
   const requestControllerRef = useRef<AbortController | null>(null);
   const words = useWordsAnalysis();
+  const queryClient = useQueryClient();
 
   const explain = useCallback((requestError: Error): string => {
     if (requestError instanceof BibleAIClientError && requestError.code === "INVALID_TRANSLATION" && passage) {
@@ -61,6 +66,17 @@ export function useBibleAiPanel(options: {
     return false;
   }, []);
 
+  const chat = useAskPassage({ passage, onAccessError: applyAccessError });
+  const resetChat = chat.reset;
+
+  // Each AI request uses the monthly quota: refresh it when the panel closes.
+  useEffect(() => {
+    if (!open) return;
+    return () => {
+      void queryClient.invalidateQueries({ queryKey: meQueryKey });
+    };
+  }, [open, queryClient]);
+
   useEffect(() => {
     if (!open) return;
     if (access === "loading") {
@@ -84,8 +100,9 @@ export function useBibleAiPanel(options: {
     setViewState("menu");
     return () => {
       stopRequest();
+      resetChat();
     };
-  }, [access, open, passage, stopRequest]);
+  }, [access, open, passage, resetChat, stopRequest]);
 
   const selectMode = useCallback(async (mode: AIMode) => {
     if (!passage) return;
@@ -98,6 +115,11 @@ export function useBibleAiPanel(options: {
     setResponse("");
     setNotes([]);
     setStopped(false);
+    if (mode === "ask") {
+      resetChat();
+      setViewState("ask");
+      return;
+    }
     if (mode === "words") {
       words.reset();
       setViewState("words");
@@ -136,7 +158,7 @@ export function useBibleAiPanel(options: {
     } finally {
       if (requestControllerRef.current === controller) requestControllerRef.current = null;
     }
-  }, [applyAccessError, explain, passage, stopRequest, words]);
+  }, [applyAccessError, explain, passage, resetChat, stopRequest, words]);
 
   const backToMenu = useCallback(() => {
     stopRequest();
@@ -147,7 +169,8 @@ export function useBibleAiPanel(options: {
     setStopped(false);
     setCurrentMode(null);
     words.reset();
-  }, [stopRequest, words]);
+    resetChat();
+  }, [resetChat, stopRequest, words]);
 
   const stopResponse = useCallback(() => {
     if (!response) {
@@ -180,6 +203,7 @@ export function useBibleAiPanel(options: {
     error,
     stopped,
     words,
+    chat,
     labels: AI_MODE_LABELS,
     selectMode,
     backToMenu,

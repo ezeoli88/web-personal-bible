@@ -90,7 +90,13 @@ No están en el repo ni en `wrangler.jsonc`. Van con `wrangler secret put` sobre
 
 El build avisa si no están en el entorno local. Eso es esperable: no los pongas en `.env` ni en el repositorio. `.dev.vars.example` solo tiene placeholders para el bypass. Para usar la IA en `vite dev`, poné en tu `.dev.vars` el valor real de `LOGOSAGENT_API_KEY`: el binding remoto llama al Worker desplegado.
 
-Si la base todavía no tiene tablas: `npm run db:migrate`.
+Si la base todavía no tiene tablas, o hay migraciones nuevas en `migrations/`: `npm run db:migrate`.
+
+## Cupo de IA
+
+Cada lector habilitado tiene 100 consultas de IA por mes calendario (UTC), en todos los modos (`AI_MONTHLY_LIMIT` en `worker/db/aiUsage.ts`). El admin no tiene cupo. El proxy cuenta la consulta en la tabla `ai_usage` antes de llamar a `logosagent-api` y la devuelve si la API falla o la rechaza. Sin cupo responde `429 MONTHLY_QUOTA_EXCEEDED`. `/api/me` devuelve `aiQuota` (`limit`, `used`, `remaining`, `resetsAt`) y el panel de IA muestra cuántas quedan.
+
+«Preguntale al pasaje» además admite 3 preguntas por conversación, con respuestas breves (lo controla `logosagent-api`).
 
 ## `logosagent-api` (otro repositorio)
 
