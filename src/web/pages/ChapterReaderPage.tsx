@@ -14,6 +14,8 @@ import { isOnline } from "../../platform/network";
 import { copyText } from "../../platform/clipboard";
 import { notify } from "../../platform/notify";
 import { shareOrCopy } from "../../platform/share";
+import { AnnotateSheet } from "../annotations/AnnotateSheet";
+import { annotationKey, useAnnotations, type AnnotationTarget } from "../annotations/annotations";
 import { useAuth } from "../auth/AuthProvider";
 import { clearPendingSelection, readPendingSelection, savePendingSelection } from "../auth/pendingSelection";
 import { BibleAiPanel } from "../components/BibleAiPanel";
@@ -61,6 +63,16 @@ export function ChapterReaderPage({
   const [passage, setPassage] = useState<BiblePassage | null>(null);
   const [footnotesOpen, setFootnotesOpen] = useState(false);
   const [compareVerses, setCompareVerses] = useState<Verse[]>([]);
+  const [annotating, setAnnotating] = useState<{ verses: Verse[]; focus?: "note" } | null>(null);
+  const annotations = useAnnotations();
+  const bookNumber = parseBookNumber(bookId);
+  const annotationTargets = useMemo<AnnotationTarget[]>(() => (annotating?.verses ?? []).map((verse) => ({
+    bookNumber,
+    chapter: chapterNumber,
+    verse: verse.number,
+    text: verse.text.replace(/\[\d+\]/g, "").replace(/\s+/g, " ").trim(),
+    translation,
+  })), [annotating, bookNumber, chapterNumber, translation]);
   const restored = useRef(false);
   const focused = useMemo(() => new Set(focusVerses), [focusVerses]);
   useRememberReading({ slug, chapter: chapterNumber, translation, verses, startVerse: focusVerses?.[0] });
@@ -85,6 +97,7 @@ export function ChapterReaderPage({
     setPassage(null);
     setFootnotesOpen(false);
     setCompareVerses([]);
+    setAnnotating(null);
     restored.current = false;
   }, [chapterId, translation, selection.clearSelection]);
 
@@ -128,7 +141,7 @@ export function ChapterReaderPage({
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
-      if (panelOpen || footnotesOpen || compareVerses.length > 0) return;
+      if (panelOpen || footnotesOpen || compareVerses.length > 0 || annotating) return;
       if (event.altKey || event.metaKey || event.ctrlKey) return;
       const target = event.target;
       if (target instanceof HTMLElement) {
@@ -146,7 +159,7 @@ export function ChapterReaderPage({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [chapterNav, compareVerses, footnotesOpen, goToChapter, panelOpen]);
+  }, [annotating, chapterNav, compareVerses, footnotesOpen, goToChapter, panelOpen]);
 
   async function handleAskAI() {
     if (!(await isOnline())) {
@@ -277,6 +290,8 @@ export function ChapterReaderPage({
           }}
           onEscape={selection.clearSelection}
           onFootnotePress={() => setFootnotesOpen(true)}
+          annotation={annotations[annotationKey({ bookNumber, chapter: chapterNumber, verse: verse.number })]}
+          onNotePress={(item) => setAnnotating({ verses: [item], focus: "note" })}
         />
       ))}
       <p className={styles.copyright}>{TRANSLATION_NOTICES[translation as BibleTranslation]}</p>
@@ -290,6 +305,7 @@ export function ChapterReaderPage({
           onCompare={() => setCompareVerses([...selection.selectedVerses].sort((a, b) => a.number - b.number))}
           onShare={() => void handleShare()}
           onCopy={() => void handleCopy()}
+          onAnnotate={() => setAnnotating({ verses: [...selection.selectedVerses].sort((a, b) => a.number - b.number) })}
         />
       ) : (
         <ChapterArrows navigation={chapterNav} onNavigate={goToChapter} />
@@ -301,6 +317,18 @@ export function ChapterReaderPage({
           : ""}
         onSelectTranslation={handleCompareSelect}
         onClose={() => setCompareVerses([])}
+      />
+      <AnnotateSheet
+        targets={annotationTargets}
+        reference={annotating
+          ? formatVerseReference(bookName, chapterNumber, annotating.verses.map((verse) => verse.number))
+          : ""}
+        focus={annotating?.focus}
+        onDone={() => {
+          setAnnotating(null);
+          selection.clearSelection();
+        }}
+        onClose={() => setAnnotating(null)}
       />
       {panelOpen && passage ? (
         <BibleAiPanel

@@ -55,10 +55,14 @@
 .aiButton:disabled { opacity: 0.5; cursor: not-allowed; }
 .action svg, .aiButton svg { flex-shrink: 0; }
 
-/* Small phones: the main label needs the room more than its icon. */
-@media (max-width: 379px) {
-  .action { flex-basis: 52px; }
+/* Phones: with four actions the main label needs the room more than its icon. */
+@media (max-width: 429px) {
+  .action { flex-basis: 50px; }
+  .aiButton { padding: 0 10px; font-size: 14px; }
   .aiButton svg { display: none; }
+}
+@media (max-width: 359px) {
+  .action { flex-basis: 46px; font-size: 10px; }
 }
 
 @media (min-width: 1024px) {
