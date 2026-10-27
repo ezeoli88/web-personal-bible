@@ -78,8 +78,9 @@ describe("shared links", () => {
     render(<RouterProvider router={router} />);
     await router.navigate({ to: "/$book/$chapter", params: { book: "juan", chapter: "3" }, search: {} });
 
-    await user.click(await screen.findByRole("button", { name: "Seleccionar versículo 3" }));
-    await user.click(screen.getByRole("button", { name: "Seleccionar versículo 1" }));
+    await user.click(await screen.findByRole("group", { name: "Versículo 3" }));
+    await user.click(screen.getByRole("group", { name: "Versículo 1" }));
+    expect(screen.getByTestId("selection-header")).toHaveTextContent("Juan 3:1, 3");
     await user.click(screen.getByRole("button", { name: "Compartir" }));
     await waitFor(async () => {
       expect(await navigator.clipboard.readText()).toBe(

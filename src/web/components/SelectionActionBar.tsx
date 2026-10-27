@@ -1,47 +1,54 @@
-import { MAX_AI_VERSES } from "../../core/lib/passageBuilder";
+import type { ReactNode } from "react";
+import { CompareIcon, CopyIcon, ShareIcon, SparkleIcon } from "../ui/icons";
 import styles from "./SelectionActionBar.module.css";
 
 interface Props {
   count: number;
-  maxCount?: number;
   onAskAI: () => void;
   onCompare?: () => void;
   onShare?: () => void;
-  onCancel: () => void;
+  onCopy?: () => void;
 }
 
-export function SelectionActionBar({ count, maxCount = MAX_AI_VERSES, onAskAI, onCompare, onShare, onCancel }: Props) {
+function Action({ icon, label, title, disabled, onClick }: {
+  icon: ReactNode;
+  label: string;
+  title: string;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button type="button" className={styles.action} title={title} disabled={disabled} onClick={onClick}>
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
+
+/** Actions for the selected verses. Cancelling and the count live in SelectionHeader. */
+export function SelectionActionBar({ count, onAskAI, onCompare, onShare, onCopy }: Props) {
+  const none = count === 0;
   return (
     <div className={styles.container} data-testid="selection-action-bar">
-      <p className={styles.countText}>
-        {count}/{maxCount} versículo{count === 1 ? "" : "s"}
-      </p>
-      <div className={styles.actions}>
-        <button type="button" className={styles.cancelButton} onClick={onCancel}>Cancelar</button>
-        {onCompare ? (
-          <button
-            type="button"
-            className={styles.compareButton}
-            disabled={count === 0}
-            title={count === 1 ? "Ver este versículo en otras versiones" : "Ver estos versículos en otras versiones"}
-            onClick={onCompare}
-          >
-            ⇄ Comparar
-          </button>
-        ) : null}
-        {onShare ? (
-          <button
-            type="button"
-            className={styles.shareButton}
-            disabled={count === 0}
-            title="Compartir el texto y un enlace a estos versículos"
-            onClick={onShare}
-          >
-            Compartir
-          </button>
-        ) : null}
-        <button type="button" className={styles.aiButton} onClick={onAskAI}>Preguntarle a la IA</button>
-      </div>
+      {onCompare ? (
+        <Action
+          icon={<CompareIcon />}
+          label="Comparar"
+          title={count === 1 ? "Ver este versículo en otras versiones" : "Ver estos versículos en otras versiones"}
+          disabled={none}
+          onClick={onCompare}
+        />
+      ) : null}
+      {onShare ? (
+        <Action icon={<ShareIcon />} label="Compartir" title="Compartir el texto y un enlace a estos versículos" disabled={none} onClick={onShare} />
+      ) : null}
+      {onCopy ? (
+        <Action icon={<CopyIcon />} label="Copiar" title="Copiar el texto, la referencia y un enlace" disabled={none} onClick={onCopy} />
+      ) : null}
+      <button type="button" className={styles.aiButton} disabled={none} onClick={onAskAI}>
+        <SparkleIcon size={18} />
+        Preguntar a la IA
+      </button>
     </div>
   );
 }

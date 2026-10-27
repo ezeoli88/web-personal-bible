@@ -12,21 +12,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-s);
-  padding: var(--space-s) var(--space-m);
-  padding-top: calc(var(--space-s) + env(safe-area-inset-top, 0px));
-  padding-left: calc(var(--space-m) + env(safe-area-inset-left, 0px));
-  padding-right: calc(var(--space-m) + env(safe-area-inset-right, 0px));
+  gap: var(--space-xs);
+  min-height: 56px;
+  padding: var(--space-xs) var(--space-s);
+  padding-top: calc(var(--space-xs) + env(safe-area-inset-top, 0px));
+  padding-left: calc(var(--space-s) + env(safe-area-inset-left, 0px));
+  padding-right: calc(var(--space-s) + env(safe-area-inset-right, 0px));
   border-bottom: 1px solid var(--color-border);
   background: var(--color-background);
 }
 .topActions {
   display: flex;
   align-items: center;
-  gap: var(--space-s);
+  gap: var(--space-xs);
   flex-shrink: 0;
 }
-.back, .brand {
+.brand {
   border: 0;
   background: transparent;
   color: var(--color-primary);
@@ -35,8 +36,22 @@
   text-decoration: none;
   cursor: pointer;
 }
+.back {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-round);
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+}
 .topTitle {
   margin: 0;
+  padding-left: var(--space-s);
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -44,6 +59,24 @@
   white-space: nowrap;
   font-size: 18px;
 }
+.back + .topTitle { padding-left: 0; }
+.titleButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  max-width: 100%;
+  height: 44px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-m);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.titleButton svg { flex-shrink: 0; color: var(--color-textSecondary); }
+.titleText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crumbs { display: none; }
 .reading {
   padding: var(--space-m);

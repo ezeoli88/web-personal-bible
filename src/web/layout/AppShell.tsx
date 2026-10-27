@@ -1,11 +1,13 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useBibleRepository } from "../../core/hooks/DatabaseProvider";
-import { bookSlug } from "../../core/lib/bookSlugs";
+import { bookFromSlug, bookSlug } from "../../core/lib/bookSlugs";
 import { useBooks } from "../../core/hooks/useBibleQueries";
 import { useAuth } from "../auth/AuthProvider";
 import { AccountBox } from "../auth/AccountBox";
+import { AccountMenu } from "../auth/AccountMenu";
 import { BookItem } from "../components/BookItem";
+import { ChapterPicker } from "../components/ChapterPicker";
 import { GoToReference } from "../components/GoToReference";
 import { TestamentFilter } from "../components/TestamentFilter";
 import { ReadingSettings } from "../components/ReadingSettings";
@@ -14,7 +16,18 @@ import { BookFilterProvider, useBookFilter } from "./bookFilter";
 import { crumbsFor, logicalParent } from "./paths";
 import { InstallAppButton } from "../pwa/InstallAppButton";
 import { pageMeta } from "../seo/pageMeta";
+import { ChevronDownIcon, ChevronLeftIcon } from "../ui/icons";
 import styles from "./AppShell.module.css";
+
+/** The book and chapter of a reader path (`/romanos/12`), or null on any other page. */
+function readerLocation(pathname: string) {
+  const [bookParam, chapterParam, leaf] = pathname.split("/").filter(Boolean);
+  if (!bookParam || !chapterParam || leaf) return null;
+  const book = bookFromSlug(bookParam);
+  const chapter = Number(chapterParam);
+  if (!book || !Number.isInteger(chapter) || chapter < 1 || chapter > book.chapters) return null;
+  return { slug: bookParam, book, chapter };
+}
 
 function ShellFrame({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -22,6 +35,8 @@ function ShellFrame({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const navigate = useNavigate();
   const { translation } = useBibleRepository();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const reader = readerLocation(pathname);
 
   useEffect(() => {
     const meta = pageMeta(pathname, translation);
@@ -90,17 +105,40 @@ function ShellFrame({ children }: { children: ReactNode }) {
       <div className={styles.main}>
         <header className={styles.topbar}>
           {parent ? (
-            <button type="button" className={styles.back} onClick={() => go(parent)}>
-              ←
+            <button type="button" className={styles.back} aria-label="Volver" onClick={() => go(parent)}>
+              <ChevronLeftIcon size={24} />
             </button>
-          ) : <span />}
-          <h1 className={styles.topTitle}>{title}</h1>
+          ) : null}
+          <h1 className={styles.topTitle}>
+            {reader ? (
+              <button
+                type="button"
+                className={styles.titleButton}
+                aria-haspopup="dialog"
+                aria-label={`Elegir capítulo (${reader.book.name} ${reader.chapter})`}
+                onClick={() => setPickerOpen(true)}
+              >
+                <span className={styles.titleText}>{reader.book.name} {reader.chapter}</span>
+                <ChevronDownIcon size={18} />
+              </button>
+            ) : title}
+          </h1>
           <div className={styles.topActions}>
+            {reader ? <TranslationSelector chip /> : null}
             <ReadingSettings />
-            <InstallAppButton />
-            <AccountBox status={auth.status} email={auth.email} role={auth.role} returnTo={href} />
+            <AccountMenu status={auth.status} email={auth.email} role={auth.role} returnTo={href} />
           </div>
         </header>
+        {reader ? (
+          <ChapterPicker
+            open={pickerOpen}
+            onClose={() => setPickerOpen(false)}
+            slug={reader.slug}
+            bookName={reader.book.name}
+            chapters={reader.book.chapters}
+            current={reader.chapter}
+          />
+        ) : null}
         <nav className={styles.crumbs} aria-label="Migas de pan">
           {crumbs.map((crumb, index) => (
             <span key={crumb.href} className={styles.crumb}>

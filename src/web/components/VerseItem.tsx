@@ -1,4 +1,4 @@
-import { useEffect, useRef, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
+import { useEffect, useRef, type KeyboardEvent, type PointerEvent } from "react";
 import clsx from "clsx";
 import type { Verse } from "../../core/types/bible";
 import styles from "./VerseItem.module.css";
@@ -7,6 +7,8 @@ const LONG_PRESS_MS = 400;
 
 interface Props {
   verse: Verse;
+  /** Chapter number shown as a large initial before the first verse. */
+  dropCap?: number;
   focused?: boolean;
   selected?: boolean;
   selectionActive?: boolean;
@@ -22,6 +24,7 @@ function selectedText(): string {
 
 export function VerseItem({
   verse,
+  dropCap,
   focused = false,
   selected = false,
   selectionActive = false,
@@ -58,18 +61,14 @@ export function VerseItem({
     beginLongPress();
   }
 
+  // A tap starts the selection (or toggles the verse once it is active),
+  // unless the reader was selecting text or a long press already handled it.
   function onClick() {
     if (consumedLongPress.current) {
       consumedLongPress.current = false;
       return;
     }
-    if (!selectionActive || !onPress) return;
     if (selectedText().length > 0) return;
-    onPress(verse);
-  }
-
-  function onMarkerClick(event: MouseEvent<HTMLButtonElement>) {
-    event.stopPropagation();
     if (selectionActive) onPress?.(verse);
     else onLongPress?.(verse);
   }
@@ -90,12 +89,13 @@ export function VerseItem({
 
   return (
     <div
-      className={clsx(styles.container, selected && styles.selected, focused && !selected && styles.focused)}
+      className={clsx(styles.container, selected && styles.selected, focused && !selected && styles.focused, dropCap && styles.withDropCap)}
       data-testid="verse-item"
       data-verse-number={verse.number}
       id={`verse-${verse.number}`}
       role="group"
       tabIndex={0}
+      aria-label={`Versículo ${verse.number}${selected ? ", seleccionado" : ""}`}
       aria-pressed={selected}
       onPointerDown={onPointerDown}
       onPointerUp={clearTimer}
@@ -104,17 +104,9 @@ export function VerseItem({
       onClick={onClick}
       onKeyDown={onKeyDown}
     >
-      <button
-        type="button"
-        className={clsx(styles.marker, selected && styles.markerSelected)}
-        data-testid="verse-marker"
-        aria-label={selected ? `Quitar versículo ${verse.number}` : `Seleccionar versículo ${verse.number}`}
-        onClick={onMarkerClick}
-      >
-        {selected ? "✓" : ""}
-      </button>
-      <p className={clsx(styles.text, selected && styles.textSelected)}>
-        <span className={styles.number}>{verse.number} </span>
+      <p className={styles.text}>
+        {dropCap ? <span className={styles.dropCap} aria-hidden="true">{dropCap}</span> : null}
+        <sup className={styles.number}>{verse.number}</sup>
         {parts.map((part, index) => {
           if (/^\[\d+\]$/.test(part)) {
             return (
