@@ -16,13 +16,6 @@ const passage: BiblePassage = {
   verses: [{ id: "ntv-43-3-16", text: "Porque de tal manera amó Dios al mundo." }],
 };
 
-const menu = {
-  type: "menu",
-  title: "¿Qué te gustaría saber?",
-  options: [{ id: "reflection", label: "Reflexión", hint: "Una reflexión devocional" }],
-  footer: "",
-};
-
 function sse(text: string): Response {
   const body = [
     'data: {"type":"start","mode":"reflection"}\n\n',
@@ -70,40 +63,51 @@ describe("BibleAiPanel", () => {
     expect(screen.getByTestId("not-allowed")).toHaveTextContent("Tu correo no tiene acceso a la IA. Pedíselo al administrador.");
   });
 
-  it("loads the menu and streams a reflection", async () => {
+  it("shows the menu without asking the server and streams a reflection", async () => {
     const user = userEvent.setup();
-    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => {
-      const body = JSON.parse(String(init?.body)) as { mode: string };
-      if (body.mode === "menu") return Response.json(menu);
-      return sse("Paz");
-    }));
+    const fetchMock = vi.fn(async () => sse("Paz"));
+    vi.stubGlobal("fetch", fetchMock);
     render(
       <QueryClientProvider client={createAppQueryClient()}>
         <BibleAiPanel open passage={passage} access="allowed" onClose={vi.fn()} onLogin={vi.fn()} />
       </QueryClientProvider>,
     );
-    await user.click(await screen.findByTestId("ai-mode-reflection"));
+    expect(screen.getAllByTestId(/^ai-mode-/).map((option) => option.dataset.testid)).toEqual([
+      "ai-mode-reflection", "ai-mode-history", "ai-mode-words", "ai-mode-structure",
+    ]);
+    expect(fetchMock).not.toHaveBeenCalled();
+    await user.click(screen.getByTestId("ai-mode-reflection"));
     expect(await screen.findByText("Paz")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copiar" })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
-  it("shows a skeleton status while the menu loads", () => {
-    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+  it("shows a skeleton status while the session loads", () => {
     render(
       <QueryClientProvider client={createAppQueryClient()}>
-        <BibleAiPanel open passage={passage} access="allowed" onClose={vi.fn()} onLogin={vi.fn()} />
+        <BibleAiPanel open passage={passage} access="loading" onClose={vi.fn()} onLogin={vi.fn()} />
       </QueryClientProvider>,
     );
     expect(screen.getByRole("status")).toHaveTextContent("Cargando opciones de análisis...");
     expect(screen.getByTestId("menu-skeleton")).toHaveAttribute("aria-hidden", "true");
   });
 
+  it("asks to sign in again when the session expired before choosing a mode", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ error: "no", code: "UNAUTHENTICATED" }, { status: 401 })));
+    render(
+      <QueryClientProvider client={createAppQueryClient()}>
+        <BibleAiPanel open passage={passage} access="allowed" onClose={vi.fn()} onLogin={vi.fn()} />
+      </QueryClientProvider>,
+    );
+    await user.click(screen.getByTestId("ai-mode-reflection"));
+    expect(await screen.findByTestId("login-prompt")).toBeInTheDocument();
+  });
+
   it("shows the passage while waiting and keeps the partial text after Detener", async () => {
     const user = userEvent.setup();
     let stream: ReturnType<typeof controlledSse> | undefined;
     vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => {
-      const body = JSON.parse(String(init?.body)) as { mode: string };
-      if (body.mode === "menu") return Response.json(menu);
       stream = controlledSse(init?.signal);
       return stream.response;
     }));

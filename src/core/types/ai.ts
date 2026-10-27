@@ -183,3 +183,16 @@ export const AI_MODE_LABELS: Record<AIMode, { emoji: string; label: string; desc
     description: "Análisis de la estructura literaria",
   },
 };
+
+/** Same content as logosagent-api's fixed MENU_RESPONSE: the web builds it instead of requesting it. */
+export const AI_MENU: AIMenuResponse = {
+  type: "menu",
+  title: "¿Qué te gustaría hacer con este pasaje?",
+  options: [
+    { id: "reflection", label: "Reflexión breve", hint: "Idea + aplicación + pregunta" },
+    { id: "history", label: "Contexto histórico", hint: "2–4 puntos culturales/históricos" },
+    { id: "words", label: "Palabras clave (hebreo/griego)", hint: "Palabras por versículo y sus significados" },
+    { id: "structure", label: "Estructura / idea central", hint: "Cómo se organiza el argumento" },
+  ],
+  footer: "Elegí una opción para continuar.",
+};
