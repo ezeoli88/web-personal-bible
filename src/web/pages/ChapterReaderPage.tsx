@@ -17,6 +17,8 @@ import { shareOrCopy } from "../../platform/share";
 import { AnnotateSheet } from "../annotations/AnnotateSheet";
 import { annotationKey, useAnnotations, type AnnotationTarget } from "../annotations/annotations";
 import { useAuth } from "../auth/AuthProvider";
+import { ConnectionsSheet } from "../connections/ConnectionsSheet";
+import { useBookConnections } from "../connections/useConnections";
 import { clearPendingSelection, readPendingSelection, savePendingSelection } from "../auth/pendingSelection";
 import { BibleAiPanel } from "../components/BibleAiPanel";
 import { ChapterArrows } from "../components/ChapterArrows";
@@ -65,6 +67,8 @@ export function ChapterReaderPage({
   const [compareVerses, setCompareVerses] = useState<Verse[]>([]);
   const [annotating, setAnnotating] = useState<{ verses: Verse[]; focus?: "note" } | null>(null);
   const annotations = useAnnotations();
+  const { data: bookConnections } = useBookConnections(parseBookNumber(bookId));
+  const [connectionsVerse, setConnectionsVerse] = useState<number | null>(null);
   const bookNumber = parseBookNumber(bookId);
   const annotationTargets = useMemo<AnnotationTarget[]>(() => (annotating?.verses ?? []).map((verse) => ({
     bookNumber,
@@ -98,6 +102,7 @@ export function ChapterReaderPage({
     setFootnotesOpen(false);
     setCompareVerses([]);
     setAnnotating(null);
+    setConnectionsVerse(null);
     restored.current = false;
   }, [chapterId, translation, selection.clearSelection]);
 
@@ -141,7 +146,7 @@ export function ChapterReaderPage({
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
-      if (panelOpen || footnotesOpen || compareVerses.length > 0 || annotating) return;
+      if (panelOpen || footnotesOpen || compareVerses.length > 0 || annotating || connectionsVerse !== null) return;
       if (event.altKey || event.metaKey || event.ctrlKey) return;
       const target = event.target;
       if (target instanceof HTMLElement) {
@@ -159,7 +164,7 @@ export function ChapterReaderPage({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [annotating, chapterNav, compareVerses, footnotesOpen, goToChapter, panelOpen]);
+  }, [annotating, chapterNav, compareVerses, connectionsVerse, footnotesOpen, goToChapter, panelOpen]);
 
   async function handleAskAI() {
     if (!(await isOnline())) {
@@ -292,6 +297,8 @@ export function ChapterReaderPage({
           onFootnotePress={() => setFootnotesOpen(true)}
           annotation={annotations[annotationKey({ bookNumber, chapter: chapterNumber, verse: verse.number })]}
           onNotePress={(item) => setAnnotating({ verses: [item], focus: "note" })}
+          connections={bookConnections?.[`${chapterNumber}:${verse.number}`]?.length ?? 0}
+          onConnectionsPress={(item) => setConnectionsVerse(item.number)}
         />
       ))}
       <p className={styles.copyright}>{TRANSLATION_NOTICES[translation as BibleTranslation]}</p>
@@ -329,6 +336,11 @@ export function ChapterReaderPage({
           selection.clearSelection();
         }}
         onClose={() => setAnnotating(null)}
+      />
+      <ConnectionsSheet
+        references={connectionsVerse !== null ? bookConnections?.[`${chapterNumber}:${connectionsVerse}`] ?? [] : []}
+        reference={connectionsVerse !== null ? `${bookName} ${chapterNumber}:${connectionsVerse}` : ""}
+        onClose={() => setConnectionsVerse(null)}
       />
       {panelOpen && passage ? (
         <BibleAiPanel

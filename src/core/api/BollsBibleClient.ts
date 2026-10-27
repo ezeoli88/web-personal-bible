@@ -118,6 +118,30 @@ export class BollsBibleClient {
     return payload as BollsVerse;
   }
 
+  /** Several places in one request; the answer keeps the order of `places`. */
+  async getVerses(
+    places: Array<{ translation: BibleTranslation; book: number; chapter: number; verses: number[] }>,
+    signal?: AbortSignal,
+  ): Promise<BollsVerse[][]> {
+    const response = await fetch(`${this.baseUrl}/get-verses/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(places),
+      signal,
+    });
+    if (!response.ok) throw new Error(`Bolls API error: ${response.status}`);
+    const payload: unknown = await response.json();
+    if (!Array.isArray(payload)) throw new Error("Respuesta inválida de Bolls");
+    return places.map((_, index) => {
+      const group: unknown = payload[index];
+      return Array.isArray(group)
+        ? group.filter((value): value is BollsVerse =>
+          typeof value === "object" && value !== null &&
+          typeof (value as BollsVerse).verse === "number" && typeof (value as BollsVerse).text === "string")
+        : [];
+    });
+  }
+
   async search(
     translation: BibleTranslation,
     query: string,
