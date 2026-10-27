@@ -1,0 +1,23 @@
+.arrow {
+  position: fixed;
+  bottom: calc(var(--space-l) + env(safe-area-inset-bottom, 0px));
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-round);
+  background: var(--color-background);
+  color: var(--color-text);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.previous { left: calc(var(--space-m) + env(safe-area-inset-left, 0px)); }
+.next { right: calc(var(--space-m) + env(safe-area-inset-right, 0px)); }
+
+@media (min-width: 1024px) {
+  .arrows { display: none; }
+}

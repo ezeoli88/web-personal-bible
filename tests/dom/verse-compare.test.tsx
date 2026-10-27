@@ -59,15 +59,15 @@ afterEach(() => {
 describe("SelectionActionBar compare", () => {
   it("compares one or several verses", () => {
     const onCompare = vi.fn();
-    const view = render(<SelectionActionBar count={1} onAskAI={vi.fn()} onCompare={onCompare} onCancel={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "⇄ Comparar" }));
-    view.rerender(<SelectionActionBar count={3} onAskAI={vi.fn()} onCompare={onCompare} onCancel={vi.fn()} />);
-    const button = screen.getByRole("button", { name: "⇄ Comparar" });
+    const view = render(<SelectionActionBar count={1} onAskAI={vi.fn()} onCompare={onCompare} />);
+    fireEvent.click(screen.getByRole("button", { name: "Comparar" }));
+    view.rerender(<SelectionActionBar count={3} onAskAI={vi.fn()} onCompare={onCompare} />);
+    const button = screen.getByRole("button", { name: "Comparar" });
     expect(button).toBeEnabled();
     fireEvent.click(button);
     expect(onCompare).toHaveBeenCalledTimes(2);
-    view.rerender(<SelectionActionBar count={0} onAskAI={vi.fn()} onCompare={onCompare} onCancel={vi.fn()} />);
-    expect(screen.getByRole("button", { name: "⇄ Comparar" })).toBeDisabled();
+    view.rerender(<SelectionActionBar count={0} onAskAI={vi.fn()} onCompare={onCompare} />);
+    expect(screen.getByRole("button", { name: "Comparar" })).toBeDisabled();
   });
 });
 

@@ -7,11 +7,13 @@ import styles from "./TranslationSelector.module.css";
 
 interface Props {
   compact?: boolean;
+  /** Code-only pill for the phone top bar. */
+  chip?: boolean;
 }
 
 const FOCUSABLE = "button:not([disabled]):not([tabindex='-1'])";
 
-export function TranslationSelector({ compact = false }: Props) {
+export function TranslationSelector({ compact = false, chip = false }: Props) {
   const { availableTranslations, setTranslation, translation } = useBibleRepository();
   const [open, setOpen] = useState(false);
   const titleId = useId();
@@ -57,12 +59,12 @@ export function TranslationSelector({ compact = false }: Props) {
   }, [close]);
 
   return (
-    <div className={clsx(styles.container, compact && styles.containerCompact)}>
-      {!compact ? <span className={styles.label}>Traducción</span> : null}
+    <div className={clsx(styles.container, compact && styles.containerCompact, chip && styles.containerChip)}>
+      {!compact && !chip ? <span className={styles.label}>Traducción</span> : null}
       <button
         ref={triggerRef}
         type="button"
-        className={clsx(styles.field, compact && styles.fieldCompact)}
+        className={clsx(styles.field, compact && styles.fieldCompact, chip && styles.fieldChip)}
         data-testid="translation-select"
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -71,10 +73,14 @@ export function TranslationSelector({ compact = false }: Props) {
         onClick={() => setOpen(true)}
       >
         <span className={styles.fieldCode}>{translation}</span>
-        <span className={styles.fieldLabel}>{TRANSLATION_LABELS[translation]}</span>
-        <svg className={styles.chevron} viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+        {chip ? null : (
+          <>
+            <span className={styles.fieldLabel}>{TRANSLATION_LABELS[translation]}</span>
+            <svg className={styles.chevron} viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </>
+        )}
       </button>
       {open ? createPortal(
         <div className={styles.overlay} role="presentation" onKeyDown={handleKeyDown}>

@@ -45,11 +45,13 @@
   text-align: center;
 }
 .withBar { padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
-@media (max-width: 599px) {
-  .withBar { padding-bottom: calc(176px + env(safe-area-inset-bottom, 0px)); }
-}
+/* Room under the chapter footer for the floating chapter arrows. */
+.withArrows { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+.desktopOnly { display: none; }
 
 @media (min-width: 1024px) {
   .mobileHeader, .mobileList { display: none; }
+  .desktopOnly { display: block; }
+  .withArrows { padding-bottom: 0; }
   .desktopHint { display: block; color: var(--color-textSecondary); }
 }

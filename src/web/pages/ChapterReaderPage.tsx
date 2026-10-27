@@ -11,14 +11,17 @@ import type { BiblePassage } from "../../core/types/ai";
 import type { ChapterNavigationInfo, Verse } from "../../core/types/bible";
 import { TRANSLATION_NOTICES, type BibleTranslation } from "../../core/types/translation";
 import { isOnline } from "../../platform/network";
+import { copyText } from "../../platform/clipboard";
 import { notify } from "../../platform/notify";
 import { shareOrCopy } from "../../platform/share";
 import { useAuth } from "../auth/AuthProvider";
 import { clearPendingSelection, readPendingSelection, savePendingSelection } from "../auth/pendingSelection";
 import { BibleAiPanel } from "../components/BibleAiPanel";
+import { ChapterArrows } from "../components/ChapterArrows";
 import { ChapterNavigationFooter } from "../components/ChapterNavigationFooter";
 import { Footnotes } from "../components/Footnotes";
 import { SelectionActionBar } from "../components/SelectionActionBar";
+import { SelectionHeader } from "../components/SelectionHeader";
 import { TranslationSelector } from "../components/TranslationSelector";
 import { VerseCompareSheet } from "../components/VerseCompareSheet";
 import { VerseItem } from "../components/VerseItem";
@@ -176,19 +179,33 @@ export function ChapterReaderPage({
     });
   }
 
+  function selectionShare() {
+    return buildVerseShare({
+      bookName,
+      chapterNumber,
+      slug,
+      translation,
+      verses: selection.selectedVerses,
+      origin: window.location.origin,
+    });
+  }
+
   async function handleShare() {
     try {
-      const result = await shareOrCopy(buildVerseShare({
-        bookName,
-        chapterNumber,
-        slug,
-        translation,
-        verses: selection.selectedVerses,
-        origin: window.location.origin,
-      }));
+      const result = await shareOrCopy(selectionShare());
       if (result === "copied") notify("Copiado", "El pasaje y su enlace se copiaron al portapapeles.");
     } catch (shareError) {
       notify("No se pudo compartir", shareError instanceof Error ? shareError.message : "Probá de nuevo.");
+    }
+  }
+
+  async function handleCopy() {
+    try {
+      const payload = selectionShare();
+      await copyText(`${payload.text}\n${payload.url}`);
+      notify("Copiado", "El pasaje y su enlace se copiaron al portapapeles.");
+    } catch (copyError) {
+      notify("No se pudo copiar", copyError instanceof Error ? copyError.message : "Probá de nuevo.");
     }
   }
 
@@ -230,13 +247,26 @@ export function ChapterReaderPage({
   if (isPending) return <p className={styles.status}>Cargando capítulo...</p>;
 
   return (
-    <section className={selection.isSelectionActive ? styles.withBar : undefined}>
-      <h2 className={styles.title}>{bookName} {chapterNumber} · {translation}</h2>
-      <TranslationSelector compact />
-      {verses.map((verse: Verse) => (
+    <section className={selection.isSelectionActive ? styles.withBar : styles.withArrows}>
+      {selection.isSelectionActive ? (
+        <SelectionHeader
+          reference={formatVerseReference(bookName, chapterNumber, selection.selectedVerses.map((verse) => verse.number))}
+          count={selection.selectedVerses.length}
+          maxCount={selection.maxSelectable}
+          translation={translation}
+          onCancel={selection.clearSelection}
+        />
+      ) : null}
+      {/* On phones the top bar already names the chapter and the translation. */}
+      <div className={styles.desktopOnly}>
+        <h2 className={styles.title}>{bookName} {chapterNumber} · {translation}</h2>
+        <TranslationSelector compact />
+      </div>
+      {verses.map((verse: Verse, index) => (
         <VerseItem
           key={verse.id}
           verse={verse}
+          dropCap={index === 0 ? chapterNumber : undefined}
           focused={focused.has(verse.number)}
           selected={selection.isSelected(verse.id)}
           selectionActive={selection.isSelectionActive}
@@ -256,13 +286,14 @@ export function ChapterReaderPage({
       {selection.isSelectionActive ? (
         <SelectionActionBar
           count={selection.selectedVerses.length}
-          maxCount={selection.maxSelectable}
           onAskAI={() => void handleAskAI()}
           onCompare={() => setCompareVerses([...selection.selectedVerses].sort((a, b) => a.number - b.number))}
           onShare={() => void handleShare()}
-          onCancel={selection.clearSelection}
+          onCopy={() => void handleCopy()}
         />
-      ) : null}
+      ) : (
+        <ChapterArrows navigation={chapterNav} onNavigate={goToChapter} />
+      )}
       <VerseCompareSheet
         verses={compareVerses}
         reference={compareVerses.length > 0

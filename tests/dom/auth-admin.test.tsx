@@ -151,7 +151,7 @@ describe("pendingSelection", () => {
     render(<RouterProvider router={router} />);
     await router.navigate({ to: "/$book/$chapter", params: { book: "juan", chapter: "3" }, search: { v: undefined } });
     expect(await screen.findByTestId("login-prompt")).toBeInTheDocument();
-    expect(screen.getByTestId("selection-action-bar")).toHaveTextContent("1/10");
+    expect(screen.getByTestId("selection-header")).toHaveTextContent("1 de 10 versículos");
     expect(readPendingSelection()).toBeNull();
   });
 

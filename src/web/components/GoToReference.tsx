@@ -5,7 +5,12 @@ import { parseReference } from "../../core/lib/referenceParser";
 import { formatVerseParam } from "../layout/bookRoute";
 import styles from "./GoToReference.module.css";
 
-export function GoToReference() {
+interface Props {
+  /** Called when a valid reference navigates (e.g. to close the sheet that holds the field). */
+  onNavigate?: () => void;
+}
+
+export function GoToReference({ onNavigate }: Props = {}) {
   const navigate = useNavigate();
   const [value, setValue] = useState("");
   const [error, setError] = useState(false);
@@ -20,6 +25,7 @@ export function GoToReference() {
     }
     setError(false);
     setValue("");
+    onNavigate?.();
     const book = slugifyBookName(parsed.book.name);
     if (parsed.chapter === undefined) {
       void navigate({ to: "/$book", params: { book } });

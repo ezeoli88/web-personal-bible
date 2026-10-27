@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Verse } from "../../src/core/types/bible";
 import type { WordEntry } from "../../src/core/types/ai";
 import { SelectionActionBar } from "../../src/web/components/SelectionActionBar";
+import { SelectionHeader } from "../../src/web/components/SelectionHeader";
 import { VerseItem } from "../../src/web/components/VerseItem";
 import { WordList } from "../../src/web/components/WordList";
 import { LoginPrompt } from "../../src/web/auth/LoginPrompt";
@@ -15,7 +16,7 @@ const verse: Verse = {
 };
 
 describe("VerseItem", () => {
-  it("selects with a 400ms press, the marker, the keyboard and ignores a text selection", () => {
+  it("selects with a tap, a 400ms press or the keyboard and ignores a text selection", () => {
     vi.useFakeTimers();
     const onLongPress = vi.fn();
     const onPress = vi.fn();
@@ -41,9 +42,13 @@ describe("VerseItem", () => {
     fireEvent.pointerDown(row);
     vi.advanceTimersByTime(400);
     expect(onLongPress).toHaveBeenCalledWith(verse);
+    // The click that ends a long press does not count twice.
+    fireEvent.click(row);
+    expect(onLongPress).toHaveBeenCalledOnce();
 
-    fireEvent.click(screen.getByTestId("verse-marker"));
+    fireEvent.click(row);
     expect(onLongPress).toHaveBeenCalledTimes(2);
+    expect(onPress).not.toHaveBeenCalled();
 
     fireEvent.keyDown(row, { key: "Enter" });
     expect(onLongPress).toHaveBeenCalledTimes(3);
@@ -66,14 +71,29 @@ describe("VerseItem", () => {
 });
 
 describe("SelectionActionBar", () => {
-  it("shows the count and the two actions", () => {
-    const onAskAI = vi.fn();
+  it("offers compare, share, copy and the AI in one row", () => {
+    const actions = { onAskAI: vi.fn(), onCompare: vi.fn(), onShare: vi.fn(), onCopy: vi.fn() };
+    const view = render(<SelectionActionBar count={1} {...actions} />);
+    fireEvent.click(screen.getByRole("button", { name: "Comparar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Compartir" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copiar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Preguntar a la IA" }));
+    for (const action of Object.values(actions)) expect(action).toHaveBeenCalledOnce();
+
+    view.rerender(<SelectionActionBar count={0} {...actions} />);
+    for (const name of ["Comparar", "Compartir", "Copiar", "Preguntar a la IA"]) {
+      expect(screen.getByRole("button", { name })).toBeDisabled();
+    }
+  });
+});
+
+describe("SelectionHeader", () => {
+  it("names the selection and cancels it", () => {
     const onCancel = vi.fn();
-    render(<SelectionActionBar count={1} onAskAI={onAskAI} onCancel={onCancel} />);
-    expect(screen.getByText("1/10 versículo")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Preguntarle a la IA" }));
-    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
-    expect(onAskAI).toHaveBeenCalledOnce();
+    render(<SelectionHeader reference="Juan 3:16, 18" count={2} maxCount={10} translation="NTV" onCancel={onCancel} />);
+    expect(screen.getByTestId("selection-header")).toHaveTextContent("Juan 3:16, 18");
+    expect(screen.getByTestId("selection-header")).toHaveTextContent("2 de 10 versículos · NTV");
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar selección" }));
     expect(onCancel).toHaveBeenCalledOnce();
   });
 });

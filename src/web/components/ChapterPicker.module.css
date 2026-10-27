@@ -1,0 +1,76 @@
+.dialog {
+  width: min(480px, 100%);
+  max-width: 100%;
+  max-height: 85vh;
+  max-height: 85dvh;
+  margin: auto auto 0;
+  padding: 0;
+  border: 0;
+  border-radius: 20px 20px 0 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  box-shadow: 0 -8px 32px rgb(0 0 0 / 20%);
+}
+.dialog::backdrop { background: rgb(32 33 36 / 45%); }
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+  padding: var(--space-s) 20px;
+  padding-bottom: calc(var(--space-l) + env(safe-area-inset-bottom, 0px));
+}
+.handle { width: 40px; height: 5px; margin: 0 auto var(--space-xs); border-radius: var(--radius-round); background: var(--color-border); }
+.header { display: flex; align-items: center; gap: var(--space-s); }
+.title { flex: 1; min-width: 0; margin: 0; overflow: hidden; font-size: 22px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.changeBook {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-round);
+  background: var(--color-background);
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.close {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-round);
+  background: transparent;
+  color: var(--color-textSecondary);
+  cursor: pointer;
+}
+.label { margin: var(--space-xs) 0 0; color: var(--color-textSecondary); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-s);
+  max-height: 40vh;
+  max-height: 40dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.chapter {
+  height: 48px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.current { background: var(--color-primary); color: var(--color-onPrimary); font-weight: 700; }
+
+@media (min-width: 1024px) {
+  .dialog { margin: 10vh auto auto; border: 1px solid var(--color-border); border-radius: var(--radius-l); }
+}

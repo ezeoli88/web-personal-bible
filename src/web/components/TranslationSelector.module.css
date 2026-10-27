@@ -18,6 +18,15 @@
 }
 .field:disabled { cursor: default; opacity: 0.7; }
 .fieldCompact { width: auto; max-width: 90%; }
+.containerChip { flex-shrink: 0; margin-top: 0; }
+.fieldChip {
+  width: auto;
+  min-height: 32px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-round);
+  font-size: 13px;
+}
 .fieldCode { color: var(--color-primary); font-weight: 700; }
 .fieldLabel { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chevron {
