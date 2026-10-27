@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { BiblePassage } from "../../core/types/ai";
 import { MAX_QUESTION_LENGTH, type useAskPassage } from "../hooks/useAskPassage";
+import { SaveToNotebookButton } from "../notebook/SaveToNotebookButton";
 import { MarkdownText } from "./MarkdownText";
 import { PassageReading } from "./PassageReading";
 import { StreamingText } from "./StreamingText";
@@ -60,7 +61,16 @@ export function AskPassageChat({ passage, chat, onBack }: Props) {
         {chat.turns.map((turn, index) => turn.role === "user" ? (
           <p key={index} className={styles.question}>{turn.content}</p>
         ) : (
-          <div key={index} className={styles.answer}><MarkdownText>{turn.content}</MarkdownText></div>
+          <div key={index} className={styles.answer}>
+            <MarkdownText>{turn.content}</MarkdownText>
+            <SaveToNotebookButton
+              className={styles.save}
+              passage={passage}
+              kind="ask"
+              title={chat.turns[index - 1]?.content ?? "Pregunta"}
+              content={turn.content}
+            />
+          </div>
         ))}
         {chat.pending ? (
           <>

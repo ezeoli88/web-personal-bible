@@ -73,7 +73,7 @@ describe("BibleAiPanel", () => {
       </QueryClientProvider>,
     );
     expect(screen.getAllByTestId(/^ai-mode-/).map((option) => option.dataset.testid)).toEqual([
-      "ai-mode-ask", "ai-mode-reflection", "ai-mode-history", "ai-mode-words", "ai-mode-structure",
+      "ai-mode-ask", "ai-mode-reflection", "ai-mode-history", "ai-mode-words", "ai-mode-structure", "ai-mode-group",
     ]);
     expect(fetchMock).not.toHaveBeenCalled();
     await user.click(screen.getByTestId("ai-mode-reflection"));

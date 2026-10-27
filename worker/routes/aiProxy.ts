@@ -7,6 +7,16 @@ import type { AppDeps, AppEnv } from "../app-env";
 const RESPONSE_HEADERS = ["content-type", "x-request-id", "retry-after"] as const;
 const UNAVAILABLE_MESSAGE = "La IA no está disponible en este momento.";
 
+/** Requests answered from the lexicon alone, without the model: they do not use the quota. */
+function usesModel(body: Uint8Array): boolean {
+  try {
+    const parsed = JSON.parse(new TextDecoder().decode(body)) as { mode?: unknown; step?: unknown };
+    return !(parsed.mode === "words" && parsed.step === "study");
+  } catch {
+    return true;
+  }
+}
+
 export function registerAiProxy(app: Hono<AppEnv>, deps: AppDeps): void {
   app.post("/api/bible-ai/stream", requireSession, requireAllowed, async (c) => {
     const contentType = c.req.header("content-type") ?? "";
@@ -41,7 +51,7 @@ export function registerAiProxy(app: Hono<AppEnv>, deps: AppDeps): void {
     // The monthly quota is counted before calling the API and given back if
     // the API fails or rejects the request, so only answers count.
     let quota: AiQuota | null = null;
-    if (c.get("role") !== "admin") {
+    if (c.get("role") !== "admin" && usesModel(body)) {
       quota = await consumeAiQuota(c.env.DB, email);
       if (!quota) {
         return apiError(

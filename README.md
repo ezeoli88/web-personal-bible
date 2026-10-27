@@ -94,9 +94,15 @@ Si la base todavía no tiene tablas, o hay migraciones nuevas en `migrations/`: 
 
 ## Cupo de IA
 
-Cada lector habilitado tiene 100 consultas de IA por mes calendario (UTC), en todos los modos (`AI_MONTHLY_LIMIT` en `worker/db/aiUsage.ts`). El admin no tiene cupo. El proxy cuenta la consulta en la tabla `ai_usage` antes de llamar a `logosagent-api` y la devuelve si la API falla o la rechaza. Sin cupo responde `429 MONTHLY_QUOTA_EXCEEDED`. `/api/me` devuelve `aiQuota` (`limit`, `used`, `remaining`, `resetsAt`) y el panel de IA muestra cuántas quedan.
+Cada lector habilitado tiene 100 consultas de IA por mes calendario (UTC), en todos los modos (`AI_MONTHLY_LIMIT` en `worker/db/aiUsage.ts`). El admin no tiene cupo y el estudio de palabra (`step: "study"`, sale del léxico sin usar el modelo) no lo consume. El proxy cuenta la consulta en la tabla `ai_usage` antes de llamar a `logosagent-api` y la devuelve si la API falla o la rechaza. Sin cupo responde `429 MONTHLY_QUOTA_EXCEEDED`. `/api/me` devuelve `aiQuota` (`limit`, `used`, `remaining`, `resetsAt`) y el panel de IA muestra cuántas quedan.
 
 «Preguntale al pasaje» además admite 3 preguntas por conversación, con respuestas breves (lo controla `logosagent-api`).
+
+## Estudio con IA
+
+- **Estudio de palabra a fondo**: al terminar la definición de una palabra del léxico, el panel muestra su ficha (lema, categoría, Strong, cuántas veces aparece, en qué libros y otros versículos con su texto). Sale de `step: "study"` de `logosagent-api`, que no usa el modelo ni consume cupo.
+- **Guía para grupo pequeño**: se elige 30, 45 o 60 minutos y la IA arma la guía con tiempos por sección. Se puede copiar.
+- **Cuaderno de estudio**: «Guardar en el cuaderno» en las respuestas, en cada respuesta del chat y en las palabras. Está en Guardados → Cuaderno, con etiquetas para filtrar y exportación a Markdown (copiar o descargar, con las notas de versículos). Se guarda en este dispositivo (`localStorage`, clave `study-notebook`), igual que las marcas.
 
 ## `logosagent-api` (otro repositorio)
 

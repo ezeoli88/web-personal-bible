@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
 import clsx from "clsx";
-import type { BiblePassage } from "../../core/types/ai";
+import { GROUP_DURATIONS, type BiblePassage } from "../../core/types/ai";
 import type { AiQuota } from "../auth/useMe";
 import { LoginPrompt } from "../auth/LoginPrompt";
+import { SaveToNotebookButton } from "../notebook/SaveToNotebookButton";
+import { WordStudyCard } from "../wordStudy/WordStudyCard";
 import { AskPassageChat } from "./AskPassageChat";
 import { useBibleAiPanel, type PanelAccess } from "../hooks/useBibleAiPanel";
 import { MarkdownText } from "./MarkdownText";
@@ -146,6 +148,35 @@ export function BibleAiPanel({ open, passage, access, quota, onClose, onLogin }:
           </div>
         ) : null}
 
+        {panel.viewState === "group-setup" && passage ? (
+          <div className={styles.menu} data-testid="group-setup">
+            <div className={styles.modeHeader}>
+              <span aria-hidden="true">{panel.labels.group.emoji}</span>
+              <span>{panel.labels.group.label}</span>
+            </div>
+            <p className={styles.menuTitle}>¿Cuánto dura el encuentro?</p>
+            {GROUP_DURATIONS.map((minutes) => (
+              <button
+                key={minutes}
+                type="button"
+                className={styles.modeButton}
+                onClick={() => void panel.selectMode("group", minutes)}
+              >
+                <span className={styles.emoji} aria-hidden="true">⏱️</span>
+                <span>
+                  <span className={styles.modeLabel}>{minutes} minutos</span>
+                  <span className={styles.modeHint}>
+                    {minutes === 30 ? "Breve, para un encuentro corto" : minutes === 45 ? "Lo habitual en un grupo" : "Con tiempo para conversar"}
+                  </span>
+                </span>
+              </button>
+            ))}
+            <div className={styles.actions}>
+              <button type="button" className={styles.secondary} onClick={panel.backToMenu}>← Volver al menú</button>
+            </div>
+          </div>
+        ) : null}
+
         {panel.viewState === "ask" && passage ? (
           <AskPassageChat passage={passage} chat={panel.chat} onBack={panel.backToMenu} />
         ) : null}
@@ -194,6 +225,9 @@ export function BibleAiPanel({ open, passage, access, quota, onClose, onLogin }:
                   ) : (
                     <StreamingText text={panel.words.definitions} isStreaming={wordsStep === "defining"} />
                   )}
+                  {wordsStep === "complete" && activeWord?.tokenId ? (
+                    <WordStudyCard passage={passage} tokenId={activeWord.tokenId} onNavigate={onClose} />
+                  ) : null}
                   {panel.words.notes.map((note) => <p key={note} className={styles.note}>• {note}</p>)}
                 </div>
                 <div className={styles.actions}>
@@ -204,6 +238,15 @@ export function BibleAiPanel({ open, passage, access, quota, onClose, onLogin }:
                   >
                     {panel.words.words.length > 0 ? "← Volver a las palabras" : "← Volver al menú"}
                   </button>
+                  {wordsStep === "complete" && panel.words.definitions ? (
+                    <SaveToNotebookButton
+                      className={styles.secondary}
+                      passage={passage}
+                      kind="word"
+                      title={activeWordLabel ? `Palabra: ${activeWordLabel}` : "Palabra a fondo"}
+                      content={panel.words.definitions}
+                    />
+                  ) : null}
                   {wordsStep === "error" ? (
                     <button
                       type="button"
@@ -261,9 +304,18 @@ export function BibleAiPanel({ open, passage, access, quota, onClose, onLogin }:
                 </button>
               )}
               {!panel.error && panel.viewState === "response" && panel.response ? (
-                <button type="button" className={styles.primary} onClick={() => void panel.copyResponse()}>
-                  Copiar
-                </button>
+                <>
+                  <SaveToNotebookButton
+                    className={styles.secondary}
+                    passage={passage}
+                    kind="ai"
+                    title={modeLabel.label}
+                    content={panel.response}
+                  />
+                  <button type="button" className={styles.primary} onClick={() => void panel.copyResponse()}>
+                    Copiar
+                  </button>
+                </>
               ) : null}
             </div>
           </div>

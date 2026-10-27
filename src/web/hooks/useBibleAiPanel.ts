@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { askBibleAIStream, BibleAIClientError } from "../../core/lib/aiClient";
 import { useWordsAnalysis } from "../../core/hooks/useWordsAnalysis";
-import { AI_MENU, AI_MODE_LABELS, type AIMode, type BiblePassage } from "../../core/types/ai";
+import { AI_MENU, AI_MODE_LABELS, type AIMode, type BiblePassage, type GroupDuration } from "../../core/types/ai";
 import { TRANSLATION_LABELS } from "../../core/types/translation";
 import { isOnline } from "../../platform/network";
 import { copyText } from "../../platform/clipboard";
@@ -21,7 +21,8 @@ export type PanelView =
   | "streaming"
   | "response"
   | "words"
-  | "ask";
+  | "ask"
+  | "group-setup";
 
 export function useBibleAiPanel(options: {
   open: boolean;
@@ -104,7 +105,8 @@ export function useBibleAiPanel(options: {
     };
   }, [access, open, passage, resetChat, stopRequest]);
 
-  const selectMode = useCallback(async (mode: AIMode) => {
+  /** `duration` is required for the group guide: without it the panel asks for one. */
+  const selectMode = useCallback(async (mode: AIMode, duration?: GroupDuration) => {
     if (!passage) return;
     if (!(await isOnline())) {
       notify("Sin conexión", "Necesitás conexión a internet para usar la IA.");
@@ -115,6 +117,10 @@ export function useBibleAiPanel(options: {
     setResponse("");
     setNotes([]);
     setStopped(false);
+    if (mode === "group" && !duration) {
+      setViewState("group-setup");
+      return;
+    }
     if (mode === "ask") {
       resetChat();
       setViewState("ask");
@@ -150,7 +156,7 @@ export function useBibleAiPanel(options: {
           setError(explain(requestError));
           setViewState("response");
         },
-      }, { signal: controller.signal });
+      }, { signal: controller.signal, duration });
     } catch (requestError) {
       if (requestError instanceof BibleAIClientError && requestError.code === "REQUEST_ABORTED") return;
       if (requestControllerRef.current !== controller) return;

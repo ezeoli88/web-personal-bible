@@ -62,3 +62,16 @@
   font-size: 14px;
 }
 .remaining { margin: var(--space-xs) 0 0; color: var(--color-textTertiary); font-size: 12px; text-align: center; }
+.save {
+  display: block;
+  margin: var(--space-s) 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.save:disabled { color: var(--color-textSecondary); cursor: default; }

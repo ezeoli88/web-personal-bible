@@ -448,6 +448,13 @@ describe("AI proxy", () => {
     expect(blocked.status).toBe(429);
     expect(await blocked.json()).toMatchObject({ code: "MONTHLY_QUOTA_EXCEEDED" });
 
+    const study = await call(createApp({ api: apiFor(Response.json({ type: "word-study" })) }), url, {
+      method: "POST",
+      headers: sameOriginHeaders(url, { cookie, "content-type": "application/json" }),
+      body: JSON.stringify({ mode: "words", step: "study" }),
+    });
+    expect(study.status).toBe(200);
+
     const adminCookie = await sessionCookie(ADMIN);
     const admin = await call(createApp({ api: apiFor(new Response("data: ok\n\n")) }), url, {
       method: "POST",
