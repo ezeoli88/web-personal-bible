@@ -88,3 +88,50 @@ describe("shared links", () => {
     });
   });
 });
+
+describe("continue reading", () => {
+  it("remembers the chapter read and offers to continue from the home page", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo) => {
+      const url = String(input);
+      if (url.includes("/api/me")) return Response.json({ authenticated: false });
+      if (url.includes("get-books")) return Response.json([]);
+      if (url.includes("bolls.life")) {
+        return Response.json([1, 2, 3].map((number) => ({ pk: number, verse: number, text: `Versículo ${number}` })));
+      }
+      return new Response("no", { status: 404 });
+    }));
+    Element.prototype.scrollIntoView = vi.fn();
+    const router = createAppRouter(createAppQueryClient());
+    render(<RouterProvider router={router} />);
+
+    await router.navigate({ to: "/" });
+    expect(screen.queryByTestId("continue-reading")).not.toBeInTheDocument();
+
+    await router.navigate({ to: "/$book/$chapter", params: { book: "romanos", chapter: "8" }, search: { v: 2 } });
+    await screen.findAllByTestId("verse-item");
+    expect(JSON.parse(localStorage.getItem("last-reading")!)).toEqual({ slug: "romanos", chapter: 8, verse: 2, translation: "NTV" });
+
+    await router.navigate({ to: "/" });
+    const card = await screen.findByTestId("continue-reading");
+    expect(card).toHaveTextContent("Romanos 8:2");
+    await user.click(card);
+    await waitFor(() => expect(router.state.resolvedLocation?.href).toBe("/romanos/8?v=2"));
+  });
+
+  it("ignores a stored position that no longer makes sense", async () => {
+    const { readLastReading } = await import("../../src/web/reading/lastReading");
+    for (const stored of [
+      "{",
+      JSON.stringify({ slug: "juan", chapter: 22, verse: 1, translation: "NTV" }),
+      JSON.stringify({ slug: "nada", chapter: 1, verse: 1, translation: "NTV" }),
+      JSON.stringify({ slug: "juan", chapter: 3, verse: 0, translation: "NTV" }),
+      JSON.stringify({ slug: "juan", chapter: 3, verse: 16, translation: "NVI" }),
+    ]) {
+      localStorage.setItem("last-reading", stored);
+      expect(readLastReading()).toBeNull();
+    }
+    localStorage.setItem("last-reading", JSON.stringify({ slug: "juan", chapter: 3, verse: 16, translation: "RV1960" }));
+    expect(readLastReading()).toEqual({ slug: "juan", bookName: "Juan", chapter: 3, verse: 16, translation: "RV1960" });
+  });
+});

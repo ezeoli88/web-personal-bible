@@ -7,6 +7,7 @@ import { BookItem } from "../components/BookItem";
 import { TestamentFilter } from "../components/TestamentFilter";
 import { TranslationSelector } from "../components/TranslationSelector";
 import { useBookFilter } from "../layout/bookFilter";
+import { ContinueReading } from "../reading/ContinueReading";
 import styles from "./pages.module.css";
 
 interface Props {
@@ -27,6 +28,7 @@ export function BooksPage({ loginDenied = false }: Props) {
 
   return (
     <section>
+      <ContinueReading />
       <div className={styles.mobileHeader}>
         <h2 className={styles.title}>Biblia</h2>
         <TranslationSelector />

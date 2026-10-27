@@ -24,6 +24,7 @@ import { VerseCompareSheet } from "../components/VerseCompareSheet";
 import { VerseItem } from "../components/VerseItem";
 import type { PanelAccess } from "../hooks/useBibleAiPanel";
 import { formatVerseParam } from "../layout/bookRoute";
+import { useRememberReading } from "../reading/lastReading";
 import { buildVerseShare } from "../share/verseShare";
 import styles from "./pages.module.css";
 
@@ -59,6 +60,7 @@ export function ChapterReaderPage({
   const [compareVerses, setCompareVerses] = useState<Verse[]>([]);
   const restored = useRef(false);
   const focused = useMemo(() => new Set(focusVerses), [focusVerses]);
+  useRememberReading({ slug, chapter: chapterNumber, translation, verses, startVerse: focusVerses?.[0] });
 
   const footnotes = verses
     .filter((verse) => verse.footnote)
