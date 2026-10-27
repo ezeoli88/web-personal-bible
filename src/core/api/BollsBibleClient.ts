@@ -18,6 +18,13 @@ export interface BollsBook {
   chapters: number;
 }
 
+export interface BollsSearchResult {
+  /** Verses that contain the exact text, as Bolls counts them. */
+  exactMatches: number;
+  /** At most 1024 verses (Bolls' own limit). */
+  verses: Array<BollsVerse & { book: number; chapter: number }>;
+}
+
 const TAKEDOWN_MARKERS = ["me prohibió usar la traducción", "prohibited me from using"];
 
 export class BollsTranslationUnavailableError extends Error {
@@ -109,5 +116,34 @@ export class BollsBibleClient {
       throw new BollsTranslationUnavailableError(translation);
     }
     return payload as BollsVerse;
+  }
+
+  async search(
+    translation: BibleTranslation,
+    query: string,
+    signal?: AbortSignal,
+  ): Promise<BollsSearchResult> {
+    const params = new URLSearchParams({ search: query, match_case: "false", match_whole: "false" });
+    const response = await fetch(`${this.baseUrl}/v2/find/${translation}?${params}`, { signal });
+    if (!response.ok) throw new Error(`Bolls API error: ${response.status}`);
+
+    const payload: unknown = await response.json();
+    // v2 answers { exact_matches, results }; older deployments answered the bare list.
+    const list: unknown = Array.isArray(payload) ? payload : (payload as { results?: unknown } | null)?.results;
+    if (!Array.isArray(list)) throw new Error("Respuesta inválida de Bolls");
+
+    const verses = list.filter(
+      (value): value is BollsVerse & { book: number; chapter: number } =>
+        typeof value === "object" &&
+        value !== null &&
+        typeof (value as BollsVerse).book === "number" &&
+        typeof (value as BollsVerse).chapter === "number" &&
+        typeof (value as BollsVerse).verse === "number" &&
+        typeof (value as BollsVerse).text === "string",
+    );
+    if (isBollsTakedownNotice(verses)) throw new BollsTranslationUnavailableError(translation);
+
+    const exact = (payload as { exact_matches?: unknown } | null)?.exact_matches;
+    return { exactMatches: typeof exact === "number" ? exact : verses.length, verses };
   }
 }

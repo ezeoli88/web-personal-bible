@@ -58,6 +58,10 @@ function ShellFrame({ children }: { children: ReactNode }) {
       void navigate({ to: "/guardados" });
       return;
     }
+    if (path === "/buscar") {
+      void navigate({ to: "/buscar", search: {} });
+      return;
+    }
     const [book, chapter, leaf] = path.split("/").filter(Boolean);
     if (!chapter) {
       void navigate({ to: "/$book", params: { book } });

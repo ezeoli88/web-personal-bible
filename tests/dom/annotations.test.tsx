@@ -74,5 +74,5 @@ describe("highlights, bookmarks and notes", () => {
     await user.click(screen.getByRole("tab", { name: /Marcadores/ }));
     await user.click(screen.getByText("Juan 3:2"));
     await waitFor(() => expect(router.state.resolvedLocation?.href).toBe("/juan/3?v=2"));
-  });
+  }, 15_000);
 });

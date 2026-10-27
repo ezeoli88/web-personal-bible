@@ -14,6 +14,9 @@ export function pageMeta(pathname: string, translation: BibleTranslation): PageM
   const [bookParam, chapterParam, leaf] = pathname.split("/").filter(Boolean);
   if (!bookParam) return { title: `${SITE_NAME} · Leer y estudiar en español`, description: DEFAULT_DESCRIPTION };
   if (bookParam === "admin") return { title: `Accesos · ${SITE_NAME}`, description: DEFAULT_DESCRIPTION };
+  if (bookParam === "buscar") {
+    return { title: `Buscar · ${SITE_NAME}`, description: "Buscá una palabra o frase en la Biblia." };
+  }
   if (bookParam === "guardados") {
     return { title: `Guardados · ${SITE_NAME}`, description: "Tus marcadores, subrayados y notas." };
   }
