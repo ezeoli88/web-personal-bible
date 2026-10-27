@@ -1,9 +1,18 @@
 import { queryOptions } from "@tanstack/react-query";
 
+/** Monthly AI requests of a reader; the admin has none. */
+export interface AiQuota {
+  limit: number;
+  used: number;
+  remaining: number;
+  resetsAt: string;
+}
+
 export interface Me {
   authenticated: boolean;
   email?: string;
   role?: "admin" | "user" | null;
+  aiQuota?: AiQuota | null;
 }
 
 export const meQueryKey = ["me"] as const;

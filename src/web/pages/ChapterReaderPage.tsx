@@ -347,6 +347,7 @@ export function ChapterReaderPage({
           open={panelOpen}
           passage={passage}
           access={access}
+          quota={auth.me?.aiQuota ?? null}
           onClose={closePanel}
           onLogin={handleLogin}
         />

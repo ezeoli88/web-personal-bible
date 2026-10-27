@@ -52,3 +52,13 @@
   cursor: pointer;
 }
 .send:disabled { opacity: 0.5; cursor: default; }
+.limit {
+  margin: var(--space-m) 0 0;
+  padding: var(--space-m);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+  color: var(--color-textSecondary);
+  font-size: 14px;
+}
+.remaining { margin: var(--space-xs) 0 0; color: var(--color-textTertiary); font-size: 12px; text-align: center; }

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import clsx from "clsx";
 import type { BiblePassage } from "../../core/types/ai";
+import type { AiQuota } from "../auth/useMe";
 import { LoginPrompt } from "../auth/LoginPrompt";
 import { AskPassageChat } from "./AskPassageChat";
 import { useBibleAiPanel, type PanelAccess } from "../hooks/useBibleAiPanel";
@@ -14,6 +15,8 @@ interface Props {
   open: boolean;
   passage: BiblePassage | null;
   access: PanelAccess;
+  /** Monthly AI requests left; null when the reader has no limit. */
+  quota?: AiQuota | null;
   onClose: () => void;
   onLogin: () => void;
 }
@@ -43,7 +46,14 @@ function MenuSkeleton() {
   );
 }
 
-export function BibleAiPanel({ open, passage, access, onClose, onLogin }: Props) {
+function quotaNote(quota: AiQuota): string {
+  if (quota.remaining === 0) return `Usaste las ${quota.limit} consultas de IA de este mes. Se renuevan el 1.º del mes que viene.`;
+  return quota.remaining === 1
+    ? "Te queda 1 consulta de IA este mes."
+    : `Te quedan ${quota.remaining} de ${quota.limit} consultas de IA este mes.`;
+}
+
+export function BibleAiPanel({ open, passage, access, quota, onClose, onLogin }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const autoScroll = useRef(true);
@@ -132,6 +142,7 @@ export function BibleAiPanel({ open, passage, access, onClose, onLogin }: Props)
               );
             })}
             {panel.menuFooter ? <p className={styles.footerNote}>{panel.menuFooter}</p> : null}
+            {quota ? <p className={styles.footerNote} data-testid="ai-quota">{quotaNote(quota)}</p> : null}
           </div>
         ) : null}
 

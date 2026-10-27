@@ -66,6 +66,40 @@ describe("Preguntale al pasaje", () => {
       ],
     });
     expect(screen.queryByRole("button", { name: "¿Cómo puedo aplicarlo hoy?" })).not.toBeInTheDocument();
+    expect(screen.getByText("Te queda 1 pregunta sobre este pasaje.")).toBeInTheDocument();
+  });
+
+  it("stops after 3 questions", async () => {
+    const user = userEvent.setup();
+    let count = 0;
+    vi.stubGlobal("fetch", vi.fn(async () => sse(`Respuesta ${++count}.`)));
+    renderPanel();
+
+    await user.click(screen.getByTestId("ai-mode-ask"));
+    for (const question of ["Uno", "Dos", "Tres"]) {
+      await user.type(screen.getByLabelText("Tu pregunta"), question);
+      await user.click(screen.getByRole("button", { name: "Enviar" }));
+      expect(await screen.findByText(`Respuesta ${count}.`)).toBeInTheDocument();
+    }
+    expect(screen.getByTestId("ask-limit")).toHaveTextContent("Llegaste a las 3 preguntas");
+    expect(screen.queryByLabelText("Tu pregunta")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "¿Cómo puedo aplicarlo hoy?" })).not.toBeInTheDocument();
+  });
+
+  it("shows how many monthly AI requests are left", () => {
+    render(
+      <QueryClientProvider client={createAppQueryClient()}>
+        <BibleAiPanel
+          open
+          passage={passage}
+          access="allowed"
+          quota={{ limit: 100, used: 58, remaining: 42, resetsAt: "2026-11-01T00:00:00.000Z" }}
+          onClose={vi.fn()}
+          onLogin={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByTestId("ai-quota")).toHaveTextContent("Te quedan 42 de 100 consultas de IA este mes.");
   });
 
   it("starts over after going back to the menu", async () => {

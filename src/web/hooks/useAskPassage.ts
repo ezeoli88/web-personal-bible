@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { askPassageStream, BibleAIClientError } from "../../core/lib/aiClient";
+import { askPassageStream, BibleAIClientError, MAX_QUESTIONS_PER_PASSAGE } from "../../core/lib/aiClient";
 import type { BiblePassage, ChatTurn } from "../../core/types/ai";
 import { isOnline } from "../../platform/network";
 import { notify } from "../../platform/notify";
@@ -15,8 +15,9 @@ export interface PendingTurn {
 }
 
 /**
- * A conversation about one passage. Each finished question and answer joins
- * `turns`, which go with the next question so follow-ups have context.
+ * A conversation about one passage, of up to MAX_QUESTIONS_PER_PASSAGE questions
+ * to keep the cost down. Each finished question and answer joins `turns`, which
+ * go with the next question so follow-ups have context.
  */
 export function useAskPassage(options: {
   passage: BiblePassage | null;
@@ -29,6 +30,8 @@ export function useAskPassage(options: {
   const [status, setStatus] = useState<AskStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
+  const asked = turns.filter((turn) => turn.role === "user").length + (pending ? 1 : 0);
+  const remaining = Math.max(0, MAX_QUESTIONS_PER_PASSAGE - asked);
 
   const stop = useCallback(() => {
     controllerRef.current?.abort("stop");
@@ -49,7 +52,7 @@ export function useAskPassage(options: {
 
   const ask = useCallback(async (rawQuestion: string) => {
     const question = rawQuestion.trim().slice(0, MAX_QUESTION_LENGTH);
-    if (!passage || !question || controllerRef.current) return;
+    if (!passage || !question || controllerRef.current || remaining === 0) return;
     if (!(await isOnline())) {
       notify("Sin conexión", "Necesitás conexión a internet para usar la IA.");
       return;
@@ -97,7 +100,7 @@ export function useAskPassage(options: {
     } finally {
       if (current()) controllerRef.current = null;
     }
-  }, [onAccessError, passage, turns]);
+  }, [onAccessError, passage, remaining, turns]);
 
-  return { turns, pending, status, error, ask, stop, reset };
+  return { turns, pending, status, error, remaining, ask, stop, reset };
 }

@@ -24,6 +24,7 @@ export function AskPassageChat({ passage, chat, onBack }: Props) {
   const [draft, setDraft] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
   const busy = chat.status !== "idle";
+  const exhausted = chat.remaining === 0;
   const asked = new Set(chat.turns.filter((turn) => turn.role === "user").map((turn) => turn.content));
   const suggestions = STARTER_QUESTIONS.filter((question) => !asked.has(question) && question !== chat.pending?.question);
 
@@ -53,7 +54,7 @@ export function AskPassageChat({ passage, chat, onBack }: Props) {
       <div className={panelStyles.scroller} aria-busy={busy ? true : undefined} data-testid="ask-conversation">
         {chat.turns.length === 0 && !chat.pending ? (
           <p className={styles.intro}>
-            Preguntá lo que quieras sobre este pasaje. La respuesta se apoya en el texto y marca los versículos entre corchetes.
+            Hacé hasta 3 preguntas sobre este pasaje. Las respuestas son breves, se apoyan en el texto y marcan los versículos entre corchetes.
           </p>
         ) : null}
         {chat.turns.map((turn, index) => turn.role === "user" ? (
@@ -74,7 +75,7 @@ export function AskPassageChat({ passage, chat, onBack }: Props) {
           </>
         ) : null}
         {chat.error ? <p className={panelStyles.error} role="alert">⚠️ {chat.error}</p> : null}
-        {!busy && suggestions.length > 0 ? (
+        {!busy && !exhausted && suggestions.length > 0 ? (
           <div className={styles.suggestions}>
             <p className={styles.label}>{chat.turns.length > 0 ? "Seguí preguntando" : "Para empezar"}</p>
             {suggestions.map((question) => (
@@ -90,6 +91,11 @@ export function AskPassageChat({ passage, chat, onBack }: Props) {
         {chat.status === "idle" && chat.turns.length > 0 ? "Respuesta lista" : ""}
       </p>
 
+      {exhausted ? (
+        <p className={styles.limit} data-testid="ask-limit">
+          Llegaste a las 3 preguntas sobre este pasaje. Para seguir, elegí otros versículos.
+        </p>
+      ) : (
       <form className={styles.composer} onSubmit={onSubmit}>
         <label htmlFor="ask-passage-input" className={panelStyles.visuallyHidden}>Tu pregunta</label>
         <input
@@ -103,6 +109,12 @@ export function AskPassageChat({ passage, chat, onBack }: Props) {
         />
         <button type="submit" className={styles.send} disabled={busy || !draft.trim()}>Enviar</button>
       </form>
+      )}
+      {!exhausted && chat.turns.length > 0 && !busy ? (
+        <p className={styles.remaining}>
+          {chat.remaining === 1 ? "Te queda 1 pregunta sobre este pasaje." : `Te quedan ${chat.remaining} preguntas sobre este pasaje.`}
+        </p>
+      ) : null}
       <div className={panelStyles.actions}>
         {busy ? (
           <button type="button" className={panelStyles.secondary} onClick={chat.stop}>

@@ -7,6 +7,7 @@ import { issueSession } from "../../worker/auth/session";
 import { readOidcTransaction } from "../../worker/auth/session";
 import { OIDC_COOKIE, readCookie, SESSION_COOKIE } from "../../worker/lib/cookies";
 import { MAX_AI_BODY_BYTES } from "../../worker/lib/http";
+import { AI_MONTHLY_LIMIT, usageMonth } from "../../worker/db/aiUsage";
 
 const HOST = "https://biblia-web.ezeo-cloud.workers.dev";
 const ISSUER = "https://team.cloudflareaccess.com/cdn-cgi/access/sso/oidc/test-client";
@@ -421,6 +422,42 @@ describe("AI proxy", () => {
     expect(response.headers.get("cache-control")).toContain("no-transform");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     expect(response.headers.get("retry-after")).toBe("3");
+  });
+
+  it("counts answers against the monthly quota and stops at the limit", async () => {
+    const email = nextEmail("quota");
+    const cookie = await asUser(email);
+    const url = `${HOST}/api/bible-ai/stream`;
+    const send = (upstream: Response) => call(createApp({ api: apiFor(upstream) }), url, {
+      method: "POST",
+      headers: sameOriginHeaders(url, { cookie, "content-type": "application/json" }),
+      body: "{}",
+    });
+    await env.DB.prepare("INSERT INTO ai_usage (email, month, count) VALUES (?, ?, ?)")
+      .bind(email, usageMonth(), AI_MONTHLY_LIMIT - 2).run();
+
+    const failed = await send(Response.json({ error: "no", code: "INVALID_MODE" }, { status: 400 }));
+    expect(failed.status).toBe(400);
+    const me = await call(createApp(), `${HOST}/api/me`, { headers: { cookie } });
+    expect(await me.json()).toMatchObject({ aiQuota: { limit: AI_MONTHLY_LIMIT, used: AI_MONTHLY_LIMIT - 2, remaining: 2 } });
+
+    const first = await send(new Response("data: ok\n\n"));
+    expect(first.headers.get("x-ai-quota-remaining")).toBe("1");
+    expect((await send(new Response("data: ok\n\n"))).headers.get("x-ai-quota-remaining")).toBe("0");
+    const blocked = await send(new Response("data: ok\n\n"));
+    expect(blocked.status).toBe(429);
+    expect(await blocked.json()).toMatchObject({ code: "MONTHLY_QUOTA_EXCEEDED" });
+
+    const adminCookie = await sessionCookie(ADMIN);
+    const admin = await call(createApp({ api: apiFor(new Response("data: ok\n\n")) }), url, {
+      method: "POST",
+      headers: sameOriginHeaders(url, { cookie: adminCookie, "content-type": "application/json" }),
+      body: "{}",
+    });
+    expect(admin.status).toBe(200);
+    expect(admin.headers.get("x-ai-quota-remaining")).toBeNull();
+    const adminMe = await call(createApp(), `${HOST}/api/me`, { headers: { cookie: adminCookie } });
+    expect(await adminMe.json()).toMatchObject({ role: "admin", aiQuota: null });
   });
 
   it("passes the upstream status through", async () => {

@@ -177,8 +177,8 @@ export function askBibleAIStream(
   );
 }
 
-/** Turns sent with a question; logosagent-api keeps the same number. */
-export const ASK_HISTORY_TURNS = 6;
+/** Questions per conversation; logosagent-api rejects a fourth one with QUESTION_LIMIT_REACHED. */
+export const MAX_QUESTIONS_PER_PASSAGE = 3;
 
 /** Asks a free question about the passage, with the earlier turns of the conversation. */
 export function askPassageStream(
@@ -189,7 +189,7 @@ export function askPassageStream(
   options: FetchOptions = {},
 ): Promise<void> {
   return streamRequest(
-    { passage, mode: "ask", question, history: history.slice(-ASK_HISTORY_TURNS) },
+    { passage, mode: "ask", question, history },
     callbacks,
     options,
     "Error de conexión. Verificá tu internet.",
