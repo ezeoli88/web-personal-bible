@@ -74,6 +74,8 @@ Callbacks ya configurados en la aplicación SaaS de Access:
 
 El build genera `sitemap.xml` (inicio, libros y capítulos) y `public/robots.txt` lo anuncia. Los dos usan la URL pública de `SITE_ORIGIN` (`src/web/seo/site.ts`): si el sitio cambia de dominio, hay que actualizar esa constante y `public/robots.txt`.
 
+Las Conexiones (referencias cruzadas) salen de [OpenBible.info](https://www.openbible.info/labs/cross-references/), con licencia CC-BY. `npm run build` corre `npm run gen:xrefs`, que descarga el archivo una vez y escribe `public/xrefs/<libro>.json` (no se commitea). Si la máquina no llega a `a.openbible.info`, el build avisa y sigue, y el lector no muestra Conexiones. `npm run gen:xrefs -- --force` vuelve a descargarlo.
+
 ## Secretos
 
 No están en el repo ni en `wrangler.jsonc`. Van con `wrangler secret put` sobre el Worker `biblia-web`:

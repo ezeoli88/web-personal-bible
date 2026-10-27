@@ -21,6 +21,9 @@ interface Props {
   /** Highlight, bookmark and note the reader saved on this verse. */
   annotation?: VerseAnnotation;
   onNotePress?: (verse: Verse) => void;
+  /** How many Conexiones (cross references) the verse has; 0 hides the button. */
+  connections?: number;
+  onConnectionsPress?: (verse: Verse) => void;
 }
 
 function selectedText(): string {
@@ -39,6 +42,8 @@ export function VerseItem({
   onFootnotePress,
   annotation,
   onNotePress,
+  connections = 0,
+  onConnectionsPress,
 }: Props) {
   const timer = useRef<number | null>(null);
   const consumedLongPress = useRef(false);
@@ -161,6 +166,23 @@ export function VerseItem({
             }}
           >
             ✎
+          </button>
+        ) : null}
+        {connections > 0 && !selectionActive ? (
+          <button
+            type="button"
+            className={styles.connections}
+            data-testid="verse-connections"
+            aria-label={`Ver ${connections} conexiones del versículo ${verse.number}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onConnectionsPress?.(verse);
+            }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+              <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" />
+            </svg>
+            {connections}
           </button>
         ) : null}
       </p>
