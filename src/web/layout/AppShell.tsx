@@ -4,6 +4,7 @@ import { useBibleRepository } from "../../core/hooks/DatabaseProvider";
 import { bookFromSlug, bookSlug } from "../../core/lib/bookSlugs";
 import { useBooks } from "../../core/hooks/useBibleQueries";
 import { useAuth } from "../auth/AuthProvider";
+import { BookmarkIcon } from "../annotations/AnnotateSheet";
 import { AccountBox } from "../auth/AccountBox";
 import { AccountMenu } from "../auth/AccountMenu";
 import { BookItem } from "../components/BookItem";
@@ -53,6 +54,10 @@ function ShellFrame({ children }: { children: ReactNode }) {
       void navigate({ to: "/admin" });
       return;
     }
+    if (path === "/guardados") {
+      void navigate({ to: "/guardados" });
+      return;
+    }
     const [book, chapter, leaf] = path.split("/").filter(Boolean);
     if (!chapter) {
       void navigate({ to: "/$book", params: { book } });
@@ -84,6 +89,9 @@ function ShellFrame({ children }: { children: ReactNode }) {
           <ReadingSettings />
         </div>
         <GoToReference />
+        <Link className={styles.savedLink} to="/guardados" data-testid="saved-link">
+          <BookmarkIcon /> Guardados
+        </Link>
         <TranslationSelector />
         <TestamentFilter selected={filter} onSelect={setFilter} />
         <nav className={styles.bookList} aria-label="Libros">

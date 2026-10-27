@@ -37,6 +37,9 @@ export const ShareIcon = (props: IconProps) => (
     <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
   </Icon>
 );
+export const HighlightIcon = (props: IconProps) => (
+  <Icon {...props}><path d="M9 11l-5 5v4h4l5-5M14 6l4 4M12 8l6-6 4 4-6 6z" /></Icon>
+);
 export const SparkleIcon = (props: IconProps) => <Icon {...props}><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /></Icon>;
 export const ShieldIcon = (props: IconProps) => <Icon {...props}><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></Icon>;
 export const DownloadIcon = (props: IconProps) => <Icon {...props}><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></Icon>;

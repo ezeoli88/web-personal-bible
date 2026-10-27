@@ -55,3 +55,15 @@
   .withArrows { padding-bottom: 0; }
   .desktopHint { display: block; color: var(--color-textSecondary); }
 }
+.savedLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+  margin: var(--space-s) 0;
+  padding: var(--space-s) var(--space-m);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+}

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CompareIcon, CopyIcon, ShareIcon, SparkleIcon } from "../ui/icons";
+import { CompareIcon, CopyIcon, HighlightIcon, ShareIcon, SparkleIcon } from "../ui/icons";
 import styles from "./SelectionActionBar.module.css";
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
   onCompare?: () => void;
   onShare?: () => void;
   onCopy?: () => void;
+  onAnnotate?: () => void;
 }
 
 function Action({ icon, label, title, disabled, onClick }: {
@@ -26,10 +27,13 @@ function Action({ icon, label, title, disabled, onClick }: {
 }
 
 /** Actions for the selected verses. Cancelling and the count live in SelectionHeader. */
-export function SelectionActionBar({ count, onAskAI, onCompare, onShare, onCopy }: Props) {
+export function SelectionActionBar({ count, onAskAI, onCompare, onShare, onCopy, onAnnotate }: Props) {
   const none = count === 0;
   return (
     <div className={styles.container} data-testid="selection-action-bar">
+      {onAnnotate ? (
+        <Action icon={<HighlightIcon />} label="Marcar" title="Subrayar, agregar un marcador o escribir una nota" disabled={none} onClick={onAnnotate} />
+      ) : null}
       {onCompare ? (
         <Action
           icon={<CompareIcon />}

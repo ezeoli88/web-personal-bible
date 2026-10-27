@@ -1,6 +1,8 @@
 import { useEffect, useRef, type KeyboardEvent, type PointerEvent } from "react";
 import clsx from "clsx";
 import type { Verse } from "../../core/types/bible";
+import { BookmarkIcon } from "../annotations/AnnotateSheet";
+import type { VerseAnnotation } from "../annotations/annotations";
 import styles from "./VerseItem.module.css";
 
 const LONG_PRESS_MS = 400;
@@ -16,6 +18,9 @@ interface Props {
   onLongPress?: (verse: Verse) => void;
   onEscape?: () => void;
   onFootnotePress?: () => void;
+  /** Highlight, bookmark and note the reader saved on this verse. */
+  annotation?: VerseAnnotation;
+  onNotePress?: (verse: Verse) => void;
 }
 
 function selectedText(): string {
@@ -32,6 +37,8 @@ export function VerseItem({
   onLongPress,
   onEscape,
   onFootnotePress,
+  annotation,
+  onNotePress,
 }: Props) {
   const timer = useRef<number | null>(null);
   const consumedLongPress = useRef(false);
@@ -86,6 +93,8 @@ export function VerseItem({
   }
 
   const parts = verse.text.split(/(\[\d+\])/g);
+  // Selection paints its own background; the highlight comes back when it ends.
+  const highlight = selected ? undefined : annotation?.highlight;
 
   return (
     <div
@@ -106,26 +115,54 @@ export function VerseItem({
     >
       <p className={styles.text}>
         {dropCap ? <span className={styles.dropCap} aria-hidden="true">{dropCap}</span> : null}
-        <sup className={styles.number}>{verse.number}</sup>
-        {parts.map((part, index) => {
-          if (/^\[\d+\]$/.test(part)) {
-            return (
-              <button
-                key={index}
-                type="button"
-                className={styles.footnote}
-                data-testid="verse-footnote"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onFootnotePress?.();
-                }}
-              >
-                {part}
-              </button>
-            );
-          }
-          return <span key={index}>{part}</span>;
-        })}
+        <sup className={styles.number}>
+          {annotation?.bookmarked ? (
+            <span className={styles.bookmark} data-testid="verse-bookmark" role="img" aria-label="Con marcador">
+              <BookmarkIcon />
+            </span>
+          ) : null}
+          {verse.number}
+        </sup>
+        <span
+          className={clsx(highlight && styles.highlighted)}
+          style={highlight ? { background: `var(--hl-${highlight})` } : undefined}
+          data-highlight={highlight}
+        >
+          {parts.map((part, index) => {
+            if (/^\[\d+\]$/.test(part)) {
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  className={styles.footnote}
+                  data-testid="verse-footnote"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onFootnotePress?.();
+                  }}
+                >
+                  {part}
+                </button>
+              );
+            }
+            return <span key={index}>{part}</span>;
+          })}
+        </span>
+        {annotation?.note ? (
+          <button
+            type="button"
+            className={styles.noteButton}
+            data-testid="verse-note"
+            aria-label={`Ver nota del versículo ${verse.number}`}
+            title={annotation.note}
+            onClick={(event) => {
+              event.stopPropagation();
+              onNotePress?.(verse);
+            }}
+          >
+            ✎
+          </button>
+        ) : null}
       </p>
     </div>
   );

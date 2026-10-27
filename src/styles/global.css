@@ -16,6 +16,22 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-button, input { font-family: inherit; }
+button, input, textarea { font-family: inherit; }
 
 :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+/* Highlight colors for marked verses. Dark mode keeps the hue with less light so the text stays readable. */
+:root {
+  --hl-yellow: #fff3a3;
+  --hl-green: #cdeec4;
+  --hl-blue: #cbe6ff;
+  --hl-pink: #ffd3e4;
+  --hl-orange: #ffdcb0;
+}
+:root[data-theme="dark"] {
+  --hl-yellow: #5a5121;
+  --hl-green: #2b4c2e;
+  --hl-blue: #1f405f;
+  --hl-pink: #5a2b41;
+  --hl-orange: #5c3e1c;
+}

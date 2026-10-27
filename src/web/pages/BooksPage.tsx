@@ -1,8 +1,9 @@
 import { useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { bookSlug } from "../../core/lib/bookSlugs";
 import { useBooks } from "../../core/hooks/useBibleQueries";
 import { notify } from "../../platform/notify";
+import { BookmarkIcon } from "../annotations/AnnotateSheet";
 import { BookItem } from "../components/BookItem";
 import { GoToReference } from "../components/GoToReference";
 import { TestamentFilter } from "../components/TestamentFilter";
@@ -33,6 +34,9 @@ export function BooksPage({ loginDenied = false }: Props) {
       <div className={styles.mobileHeader}>
         <h2 className={styles.title}>Biblia</h2>
         <GoToReference />
+        <Link className={styles.savedLink} to="/guardados">
+          <BookmarkIcon /> Guardados
+        </Link>
         <TranslationSelector />
         <TestamentFilter selected={filter} onSelect={setFilter} />
       </div>
