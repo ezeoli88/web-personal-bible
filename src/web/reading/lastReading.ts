@@ -40,9 +40,18 @@ export function writeLastReading(reading: StoredReading): void {
   writeStorage(STORAGE_KEY, JSON.stringify({ slug, chapter, verse, translation }));
 }
 
+/** The verse under the middle of the screen, or null over a gap, the action bar or a dialog. */
+function verseAtScreenCenter(): number | null {
+  const first = document.querySelector<HTMLElement>("[data-verse-number]");
+  if (!first || typeof document.elementFromPoint !== "function") return null;
+  const { left, width } = first.getBoundingClientRect();
+  const verse = document.elementFromPoint(left + width / 2, window.innerHeight / 2)?.closest<HTMLElement>("[data-verse-number]");
+  return verse ? Number(verse.dataset.verseNumber) : null;
+}
+
 /**
- * Remembers the chapter being read and the verse in the middle of the screen,
- * starting from `startVerse` (the linked verse) or the first one.
+ * Remembers the chapter being read and, once scrolling settles, the verse in
+ * the middle of the screen. It starts from `startVerse` (the linked verse) or the first one.
  */
 export function useRememberReading(options: {
   slug: string;
@@ -57,24 +66,18 @@ export function useRememberReading(options: {
     if (verses.length === 0) return;
     const save = (verse: number) => writeLastReading({ slug, chapter, verse, translation });
     save(startVerse ?? verses[0].number);
-    if (typeof IntersectionObserver === "undefined") return;
 
     let timer: number | undefined;
-    const visible = new Set<number>();
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        const verse = Number((entry.target as HTMLElement).dataset.verseNumber);
-        if (entry.isIntersecting) visible.add(verse);
-        else visible.delete(verse);
-      }
-      if (visible.size === 0) return;
+    const onScroll = () => {
       window.clearTimeout(timer);
-      const current = Math.min(...visible);
-      timer = window.setTimeout(() => save(current), SAVE_DELAY_MS);
-    }, { rootMargin: "-45% 0px -45% 0px" });
-    document.querySelectorAll<HTMLElement>("[data-verse-number]").forEach((element) => observer.observe(element));
+      timer = window.setTimeout(() => {
+        const verse = verseAtScreenCenter();
+        if (verse) save(verse);
+      }, SAVE_DELAY_MS);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
       window.clearTimeout(timer);
     };
   }, [chapter, slug, startVerse, translation, verses]);

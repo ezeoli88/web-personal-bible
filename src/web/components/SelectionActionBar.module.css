@@ -45,6 +45,6 @@
 /* On phones the secondary actions take one row and the AI button the next. */
 @media (max-width: 599px) {
   .actions { flex-wrap: wrap; }
-  .cancelButton, .compareButton, .shareButton { flex: 1 1 0; min-width: 0; padding: var(--space-s); }
+  .cancelButton, .compareButton, .shareButton { flex: 1 1 0; min-width: 0; padding: var(--space-s) var(--space-xs); font-size: 14px; white-space: nowrap; }
   .aiButton { flex: 1 0 100%; }
 }

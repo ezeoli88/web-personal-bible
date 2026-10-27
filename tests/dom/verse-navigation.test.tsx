@@ -119,6 +119,31 @@ describe("continue reading", () => {
     await waitFor(() => expect(router.state.resolvedLocation?.href).toBe("/romanos/8?v=2"));
   });
 
+  it("saves the verse in the middle of the screen once scrolling stops", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo) => {
+      const url = String(input);
+      if (url.includes("/api/me")) return Response.json({ authenticated: false });
+      if (url.includes("bolls.life")) {
+        return Response.json([1, 2, 3].map((number) => ({ pk: number, verse: number, text: `Versículo ${number}` })));
+      }
+      return new Response("no", { status: 404 });
+    }));
+    const router = createAppRouter(createAppQueryClient());
+    render(<RouterProvider router={router} />);
+    await router.navigate({ to: "/$book/$chapter", params: { book: "juan", chapter: "3" }, search: {} });
+    const items = await screen.findAllByTestId("verse-item");
+    expect(JSON.parse(localStorage.getItem("last-reading")!).verse).toBe(1);
+
+    const centered = items[2].querySelector("p")!;
+    Object.defineProperty(document, "elementFromPoint", { configurable: true, value: vi.fn(() => centered) });
+    try {
+      window.dispatchEvent(new Event("scroll"));
+      await waitFor(() => expect(JSON.parse(localStorage.getItem("last-reading")!).verse).toBe(3));
+    } finally {
+      delete (document as Partial<Document>).elementFromPoint;
+    }
+  });
+
   it("ignores a stored position that no longer makes sense", async () => {
     const { readLastReading } = await import("../../src/web/reading/lastReading");
     for (const stored of [

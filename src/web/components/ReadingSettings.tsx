@@ -53,7 +53,8 @@ export function ReadingSettings() {
               <label key={option.value} className={clsx(styles.segment, preference === option.value && styles.segmentActive)}>
                 <input
                   type="radio"
-                  name="theme-preference"
+                  // The shell renders this component twice (sidebar and top bar): each needs its own radio group.
+                  name={`theme-preference-${titleId}`}
                   value={option.value}
                   checked={preference === option.value}
                   onChange={() => setPreference(option.value)}
