@@ -1,16 +1,19 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { useBibleRepository } from "../../core/hooks/DatabaseProvider";
 import { bookSlug } from "../../core/lib/bookSlugs";
 import { useBooks } from "../../core/hooks/useBibleQueries";
 import { useAuth } from "../auth/AuthProvider";
 import { AccountBox } from "../auth/AccountBox";
 import { BookItem } from "../components/BookItem";
+import { GoToReference } from "../components/GoToReference";
 import { TestamentFilter } from "../components/TestamentFilter";
-import { ThemeToggle } from "../components/ThemeToggle";
+import { ReadingSettings } from "../components/ReadingSettings";
 import { TranslationSelector } from "../components/TranslationSelector";
 import { BookFilterProvider, useBookFilter } from "./bookFilter";
 import { crumbsFor, logicalParent } from "./paths";
 import { InstallAppButton } from "../pwa/InstallAppButton";
+import { pageMeta } from "../seo/pageMeta";
 import styles from "./AppShell.module.css";
 
 function ShellFrame({ children }: { children: ReactNode }) {
@@ -18,6 +21,14 @@ function ShellFrame({ children }: { children: ReactNode }) {
   const href = useRouterState({ select: (state) => state.location.href });
   const auth = useAuth();
   const navigate = useNavigate();
+  const { translation } = useBibleRepository();
+
+  useEffect(() => {
+    const meta = pageMeta(pathname, translation);
+    document.title = meta.title;
+    document.querySelector('meta[name="description"]')?.setAttribute("content", meta.description);
+  }, [pathname, translation]);
+
   const go = (path: string) => {
     if (path === "/" || path === "") {
       void navigate({ to: "/" });
@@ -55,8 +66,9 @@ function ShellFrame({ children }: { children: ReactNode }) {
       <aside className={styles.sidebar}>
         <div className={styles.brandRow}>
           <Link className={styles.brand} to="/">Biblia</Link>
-          <ThemeToggle />
+          <ReadingSettings />
         </div>
+        <GoToReference />
         <TranslationSelector />
         <TestamentFilter selected={filter} onSelect={setFilter} />
         <nav className={styles.bookList} aria-label="Libros">
@@ -84,6 +96,7 @@ function ShellFrame({ children }: { children: ReactNode }) {
           ) : <span />}
           <h1 className={styles.topTitle}>{title}</h1>
           <div className={styles.topActions}>
+            <ReadingSettings />
             <InstallAppButton />
             <AccountBox status={auth.status} email={auth.email} role={auth.role} returnTo={href} />
           </div>

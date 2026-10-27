@@ -1,0 +1,23 @@
+.card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: var(--space-m);
+  margin-bottom: var(--space-m);
+  padding: var(--space-m);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-l);
+  background: var(--color-highlight);
+  color: var(--color-text);
+  text-decoration: none;
+}
+.label {
+  grid-column: 1;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.reference { grid-column: 1; font-size: var(--font-subtitle-size); font-weight: var(--font-subtitle-weight); }
+.translation { margin-left: var(--space-s); color: var(--color-textSecondary); font-size: var(--font-caption-size); font-weight: 600; }
+.arrow { grid-column: 2; grid-row: 1 / span 2; color: var(--color-primary); font-size: 22px; }

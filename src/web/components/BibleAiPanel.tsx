@@ -97,9 +97,7 @@ export function BibleAiPanel({ open, passage, access, onClose, onLogin }: Props)
       onClose={onClose}
     >
       <div className={styles.content}>
-        {panel.viewState === "auth-loading" || panel.viewState === "menu-loading" ? (
-          <MenuSkeleton />
-        ) : null}
+        {panel.viewState === "auth-loading" ? <MenuSkeleton /> : null}
 
         {panel.viewState === "login-required" ? <LoginPrompt onLogin={onLogin} /> : null}
 
@@ -107,15 +105,6 @@ export function BibleAiPanel({ open, passage, access, onClose, onLogin }: Props)
           <p className={styles.denied} data-testid="not-allowed">
             Tu correo no tiene acceso a la IA. Pedíselo al administrador.
           </p>
-        ) : null}
-
-        {panel.viewState === "menu-error" && passage ? (
-          <div className={styles.menu}>
-            <h2 className={styles.passageTitle}>{passage.reference}</h2>
-            <p className={styles.error} role="alert">⚠️ {panel.error}</p>
-            <button type="button" className={styles.primary} onClick={() => void panel.loadMenu()}>Reintentar</button>
-            <button type="button" className={styles.secondary} onClick={onClose}>Volver</button>
-          </div>
         ) : null}
 
         {panel.viewState === "menu" && passage ? (

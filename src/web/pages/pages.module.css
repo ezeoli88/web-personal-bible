@@ -1,6 +1,5 @@
 .mobileHeader { display: block; }
 .desktopHint { display: none; }
-.titleRow { display: flex; align-items: center; justify-content: space-between; }
 .title { margin: 0 0 var(--space-m); font-size: var(--font-title-size); font-weight: var(--font-title-weight); }
 .status { color: var(--color-textSecondary); }
 .error { color: var(--color-error); text-align: center; }
@@ -46,6 +45,9 @@
   text-align: center;
 }
 .withBar { padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 599px) {
+  .withBar { padding-bottom: calc(176px + env(safe-area-inset-bottom, 0px)); }
+}
 
 @media (min-width: 1024px) {
   .mobileHeader, .mobileList { display: none; }

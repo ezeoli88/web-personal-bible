@@ -50,7 +50,7 @@ Los módulos de `src/core/` salen de [app-ntv-personal](https://github.com/ezeol
 | `src/core/hooks/useWordsAnalysis.ts` | `src/hooks/useWordsAnalysis.ts` |
 | `src/core/hooks/DatabaseProvider.tsx` | `localStorage` `bible-translation` |
 | `src/core/providers/QueryProvider.tsx` | `refetchOnWindowFocus: false` |
-| `src/core/providers/ThemeProvider.tsx` | `localStorage` `theme-mode`, `data-theme` en `<html>` |
+| `src/core/providers/ThemeProvider.tsx` | `localStorage` `theme-mode` (claro, oscuro o sistema) y `font-scale`, `data-theme` en `<html>` |
 | `src/core/theme/index.ts` | solo tokens, sin React Native |
 
 `src/lib/features.ts` no existe en la app móvil actual. No hay un flag `ENABLE_AI` ni `ENABLE_RV1960` para copiar. Las traducciones vigentes son NTV, LBLA, RV1960, RV2004, PDT y BTX3. NVI queda mapeada a NTV porque Bolls ya no la sirve.
@@ -71,6 +71,8 @@ Callbacks ya configurados en la aplicación SaaS de Access:
 
 - `https://biblia-web.ezeo-cloud.workers.dev/auth/callback`
 - `http://localhost:5173/auth/callback`
+
+El build genera `sitemap.xml` (inicio, libros y capítulos) y `public/robots.txt` lo anuncia. Los dos usan la URL pública de `SITE_ORIGIN` (`src/web/seo/site.ts`): si el sitio cambia de dominio, hay que actualizar esa constante y `public/robots.txt`.
 
 ## Secretos
 

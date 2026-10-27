@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { darkTheme, lightTheme } from "../../src/core/theme";
+import { FONT_SCALES } from "../../src/core/providers/ThemeProvider";
+import { darkTheme, lightTheme, typography } from "../../src/core/theme";
 import { pwaManifest, pwaWorkbox, serviceWorkerBypassPatterns, serviceWorkerBypasses } from "../../src/web/pwa/pwaConfig";
 
 function pngSize(path: string) {
@@ -106,6 +107,12 @@ describe("installable document", () => {
   it("keeps the status bar color aligned with the active theme", () => {
     expect(themeInit).toContain(lightTheme.colors.background);
     expect(themeInit).toContain(darkTheme.colors.background);
+  });
+
+  it("applies the stored text size before the first paint with the same scales", () => {
+    expect(themeInit).toContain(`[${FONT_SCALES.filter((scale) => scale !== 1).join(", ")}]`);
+    expect(themeInit).toContain(`${typography.body.fontSize} * scale`);
+    expect(themeInit).toContain(`${typography.body.lineHeight} * scale`);
   });
 
   it("opts out of the browser's forced dark mode so the light theme stays light", () => {

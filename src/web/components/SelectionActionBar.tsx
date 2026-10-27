@@ -6,10 +6,11 @@ interface Props {
   maxCount?: number;
   onAskAI: () => void;
   onCompare?: () => void;
+  onShare?: () => void;
   onCancel: () => void;
 }
 
-export function SelectionActionBar({ count, maxCount = MAX_AI_VERSES, onAskAI, onCompare, onCancel }: Props) {
+export function SelectionActionBar({ count, maxCount = MAX_AI_VERSES, onAskAI, onCompare, onShare, onCancel }: Props) {
   return (
     <div className={styles.container} data-testid="selection-action-bar">
       <p className={styles.countText}>
@@ -26,6 +27,17 @@ export function SelectionActionBar({ count, maxCount = MAX_AI_VERSES, onAskAI, o
             onClick={onCompare}
           >
             ⇄ Comparar
+          </button>
+        ) : null}
+        {onShare ? (
+          <button
+            type="button"
+            className={styles.shareButton}
+            disabled={count === 0}
+            title="Compartir el texto y un enlace a estos versículos"
+            onClick={onShare}
+          >
+            Compartir
           </button>
         ) : null}
         <button type="button" className={styles.aiButton} onClick={onAskAI}>Preguntarle a la IA</button>
