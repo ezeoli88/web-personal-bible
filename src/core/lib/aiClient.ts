@@ -9,6 +9,7 @@ import {
   type APIError,
   type BiblePassage,
   type ChatTurn,
+  type GroupDuration,
   type IdentifiedWord,
   type StreamCallbacks,
   type StreamErrorEvent,
@@ -168,12 +169,13 @@ export function askBibleAIStream(
   passage: BiblePassage,
   mode: AIMode,
   callbacks: StreamCallbacks,
-  options: FetchOptions = {},
+  options: FetchOptions & { duration?: GroupDuration } = {},
 ): Promise<void> {
+  const { duration, ...fetchOptions } = options;
   return streamRequest(
-    { passage, mode },
+    duration ? { passage, mode, duration } : { passage, mode },
     callbacks,
-    options,
+    fetchOptions,
     "Error de conexión. Verificá tu internet.",
   );
 }

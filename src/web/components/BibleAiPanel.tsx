@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import clsx from "clsx";
-import type { BiblePassage } from "../../core/types/ai";
+import { GROUP_DURATIONS, type BiblePassage } from "../../core/types/ai";
 import type { AiQuota } from "../auth/useMe";
 import { LoginPrompt } from "../auth/LoginPrompt";
 import { WordStudyCard } from "../wordStudy/WordStudyCard";
@@ -144,6 +144,35 @@ export function BibleAiPanel({ open, passage, access, quota, onClose, onLogin }:
             })}
             {panel.menuFooter ? <p className={styles.footerNote}>{panel.menuFooter}</p> : null}
             {quota ? <p className={styles.footerNote} data-testid="ai-quota">{quotaNote(quota)}</p> : null}
+          </div>
+        ) : null}
+
+        {panel.viewState === "group-setup" && passage ? (
+          <div className={styles.menu} data-testid="group-setup">
+            <div className={styles.modeHeader}>
+              <span aria-hidden="true">{panel.labels.group.emoji}</span>
+              <span>{panel.labels.group.label}</span>
+            </div>
+            <p className={styles.menuTitle}>¿Cuánto dura el encuentro?</p>
+            {GROUP_DURATIONS.map((minutes) => (
+              <button
+                key={minutes}
+                type="button"
+                className={styles.modeButton}
+                onClick={() => void panel.selectMode("group", minutes)}
+              >
+                <span className={styles.emoji} aria-hidden="true">⏱️</span>
+                <span>
+                  <span className={styles.modeLabel}>{minutes} minutos</span>
+                  <span className={styles.modeHint}>
+                    {minutes === 30 ? "Breve, para un encuentro corto" : minutes === 45 ? "Lo habitual en un grupo" : "Con tiempo para conversar"}
+                  </span>
+                </span>
+              </button>
+            ))}
+            <div className={styles.actions}>
+              <button type="button" className={styles.secondary} onClick={panel.backToMenu}>← Volver al menú</button>
+            </div>
           </div>
         ) : null}
 

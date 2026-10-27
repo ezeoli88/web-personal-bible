@@ -10,7 +10,11 @@ export interface BiblePassage {
   }>;
 }
 
-export type AIMode = "reflection" | "history" | "words" | "structure" | "ask";
+export type AIMode = "reflection" | "history" | "words" | "structure" | "ask" | "group";
+
+/** Minutes of a small-group meeting. */
+export type GroupDuration = 30 | 45 | 60;
+export const GROUP_DURATIONS: readonly GroupDuration[] = [30, 45, 60];
 
 /** One earlier turn of a conversation about a passage. */
 export interface ChatTurn {
@@ -188,6 +192,11 @@ export const AI_MODE_LABELS: Record<AIMode, { emoji: string; label: string; desc
     label: "Estructura",
     description: "Análisis de la estructura literaria",
   },
+  group: {
+    emoji: "👥",
+    label: "Guía para grupo pequeño",
+    description: "Preguntas y tiempos para un encuentro",
+  },
   ask: {
     emoji: "💬",
     label: "Preguntale al pasaje",
@@ -197,7 +206,8 @@ export const AI_MODE_LABELS: Record<AIMode, { emoji: string; label: string; desc
 
 /**
  * Same content as logosagent-api's fixed MENU_RESPONSE, plus «Preguntale al pasaje»,
- * which the web opens as a chat instead of a single answer.
+ * which the web opens as a chat, and the small-group guide, which first asks for
+ * the meeting length.
  */
 export const AI_MENU: AIMenuResponse = {
   type: "menu",
@@ -208,6 +218,7 @@ export const AI_MENU: AIMenuResponse = {
     { id: "history", label: "Contexto histórico", hint: "2–4 puntos culturales/históricos" },
     { id: "words", label: "Palabras clave (hebreo/griego)", hint: "Palabras por versículo y sus significados" },
     { id: "structure", label: "Estructura / idea central", hint: "Cómo se organiza el argumento" },
+    { id: "group", label: "Guía para grupo pequeño", hint: "Preguntas y tiempos para un encuentro" },
   ],
   footer: "Elegí una opción para continuar.",
 };
