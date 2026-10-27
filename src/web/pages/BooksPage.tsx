@@ -4,6 +4,7 @@ import { bookSlug } from "../../core/lib/bookSlugs";
 import { useBooks } from "../../core/hooks/useBibleQueries";
 import { notify } from "../../platform/notify";
 import { BookItem } from "../components/BookItem";
+import { GoToReference } from "../components/GoToReference";
 import { TestamentFilter } from "../components/TestamentFilter";
 import { TranslationSelector } from "../components/TranslationSelector";
 import { useBookFilter } from "../layout/bookFilter";
@@ -31,6 +32,7 @@ export function BooksPage({ loginDenied = false }: Props) {
       <ContinueReading />
       <div className={styles.mobileHeader}>
         <h2 className={styles.title}>Biblia</h2>
+        <GoToReference />
         <TranslationSelector />
         <TestamentFilter selected={filter} onSelect={setFilter} />
       </div>

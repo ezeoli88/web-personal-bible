@@ -135,3 +135,27 @@ describe("continue reading", () => {
     expect(readLastReading()).toEqual({ slug: "juan", bookName: "Juan", chapter: 3, verse: 16, translation: "RV1960" });
   });
 });
+
+describe("go to reference", () => {
+  it("jumps to the typed passage and explains an unknown reference", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo) => {
+      const url = String(input);
+      if (url.includes("/api/me")) return Response.json({ authenticated: false });
+      if (url.includes("bolls.life")) return Response.json([]);
+      return new Response("no", { status: 404 });
+    }));
+    Element.prototype.scrollIntoView = vi.fn();
+    const router = createAppRouter(createAppQueryClient());
+    render(<RouterProvider router={router} />);
+    await router.navigate({ to: "/" });
+
+    const [field] = await screen.findAllByRole("textbox", { name: "Ir a una referencia" });
+    await user.type(field, "xyz 3{Enter}");
+    expect(screen.getByRole("alert")).toHaveTextContent("No reconozco esa referencia");
+
+    await user.clear(field);
+    await user.type(field, "1 cor 13:4-7{Enter}");
+    await waitFor(() => expect(router.state.resolvedLocation?.href).toBe("/1-corintios/13?v=4-7"));
+  });
+});

@@ -5,6 +5,7 @@ import { useBooks } from "../../core/hooks/useBibleQueries";
 import { useAuth } from "../auth/AuthProvider";
 import { AccountBox } from "../auth/AccountBox";
 import { BookItem } from "../components/BookItem";
+import { GoToReference } from "../components/GoToReference";
 import { TestamentFilter } from "../components/TestamentFilter";
 import { ReadingSettings } from "../components/ReadingSettings";
 import { TranslationSelector } from "../components/TranslationSelector";
@@ -57,6 +58,7 @@ function ShellFrame({ children }: { children: ReactNode }) {
           <Link className={styles.brand} to="/">Biblia</Link>
           <ReadingSettings />
         </div>
+        <GoToReference />
         <TranslationSelector />
         <TestamentFilter selected={filter} onSelect={setFilter} />
         <nav className={styles.bookList} aria-label="Libros">
