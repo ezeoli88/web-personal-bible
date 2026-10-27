@@ -61,7 +61,7 @@ describe("reader top bar", () => {
     const router = await openReader();
     await user.click(screen.getByRole("button", { name: "Elegir capítulo (Juan 3)" }));
     const picker = screen.getByTestId("chapter-picker");
-    await user.type(within(picker).getByRole("textbox", { name: "Ir a una referencia" }), "ro 8:28{Enter}");
+    await user.type(within(picker).getByRole("textbox", { name: "Ir a una referencia o buscar" }), "ro 8:28{Enter}");
     await waitFor(() => expect(router.state.resolvedLocation?.href).toBe("/romanos/8?v=28"));
     expect(picker).not.toHaveAttribute("open");
   });

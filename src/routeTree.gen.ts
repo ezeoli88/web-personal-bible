@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as BuscarRouteImport } from './routes/buscar'
 import { Route as GuardadosRouteImport } from './routes/guardados'
 import { Route as BookIndexRouteImport } from './routes/$book/index'
 import { Route as BookChapterIndexRouteImport } from './routes/$book/$chapter/index'
@@ -24,6 +25,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuscarRoute = BuscarRouteImport.update({
+  id: '/buscar',
+  path: '/buscar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GuardadosRoute = GuardadosRouteImport.update({
@@ -50,6 +56,7 @@ const BookChapterVersiculosRoute = BookChapterVersiculosRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/buscar': typeof BuscarRoute
   '/guardados': typeof GuardadosRoute
   '/$book/': typeof BookIndexRoute
   '/$book/$chapter/versiculos': typeof BookChapterVersiculosRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/buscar': typeof BuscarRoute
   '/guardados': typeof GuardadosRoute
   '/$book': typeof BookIndexRoute
   '/$book/$chapter/versiculos': typeof BookChapterVersiculosRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/buscar': typeof BuscarRoute
   '/guardados': typeof GuardadosRoute
   '/$book/': typeof BookIndexRoute
   '/$book/$chapter/versiculos': typeof BookChapterVersiculosRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/buscar'
     | '/guardados'
     | '/$book/'
     | '/$book/$chapter/versiculos'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/buscar'
     | '/guardados'
     | '/$book'
     | '/$book/$chapter/versiculos'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/buscar'
     | '/guardados'
     | '/$book/'
     | '/$book/$chapter/versiculos'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  BuscarRoute: typeof BuscarRoute
   GuardadosRoute: typeof GuardadosRoute
   BookIndexRoute: typeof BookIndexRoute
   BookChapterVersiculosRoute: typeof BookChapterVersiculosRoute
@@ -122,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/buscar': {
+      id: '/buscar'
+      path: '/buscar'
+      fullPath: '/buscar'
+      preLoaderRoute: typeof BuscarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/guardados': {
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  BuscarRoute: BuscarRoute,
   GuardadosRoute: GuardadosRoute,
   BookIndexRoute: BookIndexRoute,
   BookChapterVersiculosRoute: BookChapterVersiculosRoute,

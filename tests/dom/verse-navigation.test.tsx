@@ -176,7 +176,7 @@ describe("go to reference", () => {
     render(<RouterProvider router={router} />);
     await router.navigate({ to: "/" });
 
-    const [field] = await screen.findAllByRole("textbox", { name: "Ir a una referencia" });
+    const [field] = await screen.findAllByRole("textbox", { name: "Ir a una referencia o buscar" });
     await user.type(field, "xyz 3{Enter}");
     expect(screen.getByRole("alert")).toHaveTextContent("No reconozco esa referencia");
 
