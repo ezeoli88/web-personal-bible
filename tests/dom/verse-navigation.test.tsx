@@ -157,5 +157,6 @@ describe("go to reference", () => {
     await user.clear(field);
     await user.type(field, "1 cor 13:4-7{Enter}");
     await waitFor(() => expect(router.state.resolvedLocation?.href).toBe("/1-corintios/13?v=4-7"));
+    await waitFor(() => expect(document.title).toBe("1 Corintios 13 (NTV) · Biblia"));
   });
 });

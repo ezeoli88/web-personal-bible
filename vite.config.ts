@@ -6,6 +6,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { pwaManifest, pwaWorkbox } from "./src/web/pwa/pwaConfig";
+import { renderSitemap } from "./src/web/seo/sitemap";
 
 function stripStrayWorkerManifest(): Plugin {
   return {
@@ -45,6 +46,19 @@ function bibliaDevManifest(): Plugin {
   };
 }
 
+function bibliaSitemap(): Plugin {
+  return {
+    name: "biblia-sitemap",
+    apply: "build",
+    applyToEnvironment(environment) {
+      return environment.name === "client";
+    },
+    generateBundle() {
+      this.emitFile({ type: "asset", fileName: "sitemap.xml", source: renderSitemap() });
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [
     tanstackRouter({
@@ -65,6 +79,7 @@ export default defineConfig({
       devOptions: { enabled: false },
     }),
     bibliaDevManifest(),
+    bibliaSitemap(),
     stripStrayWorkerManifest(),
     cloudflare(),
   ],

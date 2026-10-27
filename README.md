@@ -72,6 +72,8 @@ Callbacks ya configurados en la aplicación SaaS de Access:
 - `https://biblia-web.ezeo-cloud.workers.dev/auth/callback`
 - `http://localhost:5173/auth/callback`
 
+El build genera `sitemap.xml` (inicio, libros y capítulos) y `public/robots.txt` lo anuncia. Los dos usan la URL pública de `SITE_ORIGIN` (`src/web/seo/site.ts`): si el sitio cambia de dominio, hay que actualizar esa constante y `public/robots.txt`.
+
 ## Secretos
 
 No están en el repo ni en `wrangler.jsonc`. Van con `wrangler secret put` sobre el Worker `biblia-web`:
