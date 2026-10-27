@@ -12,31 +12,39 @@ import {
   type HighlightColor,
   type VerseAnnotation,
 } from "../annotations/annotations";
+import { NotebookView } from "../notebook/NotebookView";
+import { useNotebook } from "../notebook/notebook";
 import styles from "./SavedPage.module.css";
 
-type Tab = "bookmarks" | "highlights" | "notes";
+type AnnotationTab = "bookmarks" | "highlights" | "notes";
+type Tab = AnnotationTab | "notebook";
 
 const TABS: Array<{ value: Tab; label: string; empty: string }> = [
   { value: "bookmarks", label: "Marcadores", empty: "Todavía no agregaste marcadores." },
   { value: "highlights", label: "Subrayados", empty: "Todavía no subrayaste versículos." },
   { value: "notes", label: "Notas", empty: "Todavía no escribiste notas." },
+  { value: "notebook", label: "Cuaderno", empty: "" },
 ];
 
-const PART: Record<Tab, "bookmarked" | "highlight" | "note"> = {
+const PART: Record<AnnotationTab, "bookmarked" | "highlight" | "note"> = {
   bookmarks: "bookmarked",
   highlights: "highlight",
   notes: "note",
 };
 
 function belongsTo(tab: Tab, annotation: VerseAnnotation): boolean {
-  return Boolean(annotation[PART[tab]]);
+  return tab !== "notebook" && Boolean(annotation[PART[tab]]);
 }
 
 export function SavedPage() {
   const annotations = useAnnotations();
   const { translation: current } = useBibleRepository();
+  const notebook = useNotebook();
   const all = Object.values(annotations).sort((a, b) => b.updatedAt - a.updatedAt);
-  const counts = Object.fromEntries(TABS.map(({ value }) => [value, all.filter((item) => belongsTo(value, item)).length])) as Record<Tab, number>;
+  const counts = Object.fromEntries(TABS.map(({ value }) => [
+    value,
+    value === "notebook" ? notebook.length : all.filter((item) => belongsTo(value, item)).length,
+  ])) as Record<Tab, number>;
   const [tab, setTab] = useState<Tab>(() => TABS.find(({ value }) => counts[value] > 0)?.value ?? "bookmarks");
   const [color, setColor] = useState<HighlightColor | null>(null);
   const usedColors = HIGHLIGHT_COLORS.filter((item) => all.some((annotation) => annotation.highlight === item));
@@ -47,7 +55,7 @@ export function SavedPage() {
     <section data-testid="saved-page">
       <h2 className={styles.title}>Guardados</h2>
       <p className={styles.intro}>
-        Tus marcadores, subrayados y notas se guardan en este dispositivo.
+        Tus marcadores, subrayados, notas y el cuaderno de estudio se guardan en este dispositivo.
       </p>
       <div className={styles.tabs} role="tablist" aria-label="Tipo de marca">
         {TABS.map(({ value, label }) => (
@@ -89,7 +97,9 @@ export function SavedPage() {
         </div>
       ) : null}
 
-      {items.length === 0 ? (
+      {tab === "notebook" ? (
+        <NotebookView notes={all.filter((item) => item.note)} />
+      ) : items.length === 0 ? (
         <div className={styles.empty} role="status">
           <p>{activeTab.empty}</p>
           <p className={styles.hint}>

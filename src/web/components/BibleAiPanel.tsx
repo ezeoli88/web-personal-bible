@@ -3,6 +3,7 @@ import clsx from "clsx";
 import { GROUP_DURATIONS, type BiblePassage } from "../../core/types/ai";
 import type { AiQuota } from "../auth/useMe";
 import { LoginPrompt } from "../auth/LoginPrompt";
+import { SaveToNotebookButton } from "../notebook/SaveToNotebookButton";
 import { WordStudyCard } from "../wordStudy/WordStudyCard";
 import { AskPassageChat } from "./AskPassageChat";
 import { useBibleAiPanel, type PanelAccess } from "../hooks/useBibleAiPanel";
@@ -237,6 +238,15 @@ export function BibleAiPanel({ open, passage, access, quota, onClose, onLogin }:
                   >
                     {panel.words.words.length > 0 ? "← Volver a las palabras" : "← Volver al menú"}
                   </button>
+                  {wordsStep === "complete" && panel.words.definitions ? (
+                    <SaveToNotebookButton
+                      className={styles.secondary}
+                      passage={passage}
+                      kind="word"
+                      title={activeWordLabel ? `Palabra: ${activeWordLabel}` : "Palabra a fondo"}
+                      content={panel.words.definitions}
+                    />
+                  ) : null}
                   {wordsStep === "error" ? (
                     <button
                       type="button"
@@ -294,9 +304,18 @@ export function BibleAiPanel({ open, passage, access, quota, onClose, onLogin }:
                 </button>
               )}
               {!panel.error && panel.viewState === "response" && panel.response ? (
-                <button type="button" className={styles.primary} onClick={() => void panel.copyResponse()}>
-                  Copiar
-                </button>
+                <>
+                  <SaveToNotebookButton
+                    className={styles.secondary}
+                    passage={passage}
+                    kind="ai"
+                    title={modeLabel.label}
+                    content={panel.response}
+                  />
+                  <button type="button" className={styles.primary} onClick={() => void panel.copyResponse()}>
+                    Copiar
+                  </button>
+                </>
               ) : null}
             </div>
           </div>
