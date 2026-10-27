@@ -1,6 +1,5 @@
 .mobileHeader { display: block; }
 .desktopHint { display: none; }
-.titleRow { display: flex; align-items: center; justify-content: space-between; }
 .title { margin: 0 0 var(--space-m); font-size: var(--font-title-size); font-weight: var(--font-title-weight); }
 .status { color: var(--color-textSecondary); }
 .error { color: var(--color-error); text-align: center; }

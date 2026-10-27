@@ -6,7 +6,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { AccountBox } from "../auth/AccountBox";
 import { BookItem } from "../components/BookItem";
 import { TestamentFilter } from "../components/TestamentFilter";
-import { ThemeToggle } from "../components/ThemeToggle";
+import { ReadingSettings } from "../components/ReadingSettings";
 import { TranslationSelector } from "../components/TranslationSelector";
 import { BookFilterProvider, useBookFilter } from "./bookFilter";
 import { crumbsFor, logicalParent } from "./paths";
@@ -55,7 +55,7 @@ function ShellFrame({ children }: { children: ReactNode }) {
       <aside className={styles.sidebar}>
         <div className={styles.brandRow}>
           <Link className={styles.brand} to="/">Biblia</Link>
-          <ThemeToggle />
+          <ReadingSettings />
         </div>
         <TranslationSelector />
         <TestamentFilter selected={filter} onSelect={setFilter} />
@@ -84,6 +84,7 @@ function ShellFrame({ children }: { children: ReactNode }) {
           ) : <span />}
           <h1 className={styles.topTitle}>{title}</h1>
           <div className={styles.topActions}>
+            <ReadingSettings />
             <InstallAppButton />
             <AccountBox status={auth.status} email={auth.email} role={auth.role} returnTo={href} />
           </div>

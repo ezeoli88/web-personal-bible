@@ -5,7 +5,6 @@ import { useBooks } from "../../core/hooks/useBibleQueries";
 import { notify } from "../../platform/notify";
 import { BookItem } from "../components/BookItem";
 import { TestamentFilter } from "../components/TestamentFilter";
-import { ThemeToggle } from "../components/ThemeToggle";
 import { TranslationSelector } from "../components/TranslationSelector";
 import { useBookFilter } from "../layout/bookFilter";
 import styles from "./pages.module.css";
@@ -29,10 +28,7 @@ export function BooksPage({ loginDenied = false }: Props) {
   return (
     <section>
       <div className={styles.mobileHeader}>
-        <div className={styles.titleRow}>
-          <h2 className={styles.title}>Biblia</h2>
-          <ThemeToggle />
-        </div>
+        <h2 className={styles.title}>Biblia</h2>
         <TranslationSelector />
         <TestamentFilter selected={filter} onSelect={setFilter} />
       </div>
