@@ -102,7 +102,17 @@ Cada lector habilitado tiene 100 consultas de IA por mes calendario (UTC), en to
 
 - **Estudio de palabra a fondo**: al terminar la definición de una palabra del léxico, el panel muestra su ficha (lema, categoría, Strong, cuántas veces aparece, en qué libros y otros versículos con su texto). Sale de `step: "study"` de `logosagent-api`, que no usa el modelo ni consume cupo.
 - **Guía para grupo pequeño**: se elige 30, 45 o 60 minutos y la IA arma la guía con tiempos por sección. Se puede copiar.
-- **Cuaderno de estudio**: «Guardar en el cuaderno» en las respuestas, en cada respuesta del chat y en las palabras. Está en Guardados → Cuaderno, con etiquetas para filtrar y exportación a Markdown (copiar o descargar, con las notas de versículos). Se guarda en este dispositivo (`localStorage`, clave `study-notebook`), igual que las marcas.
+- **Cuaderno de estudio**: «Guardar en el cuaderno» en las respuestas, en cada respuesta del chat y en las palabras. Está en Guardados → Cuaderno, con etiquetas para filtrar y exportación a Markdown (copiar o descargar, con las notas de versículos). Se guarda en la cuenta del lector, igual que las marcas (ver «Datos del lector»).
+
+## Datos del lector
+
+Los subrayados, marcadores y notas, el cuaderno de estudio y «Seguir leyendo» se guardan en D1 (`migrations/0003_user_data.sql`: `verse_annotations`, `notebook_entries`, `reading_progress`), por email y solo para lectores habilitados. Sin sesión no se puede marcar ni guardar: la app pide iniciar sesión. El tema, el tamaño de letra y la traducción siguen en el dispositivo.
+
+API (sesión y acceso obligatorios): `GET /api/user-data`, `POST /api/user-data/annotations` (`upsert`, `remove`), `POST /api/user-data/notebook`, `PATCH`/`DELETE /api/user-data/notebook/:id`, `PUT /api/user-data/reading` y `POST /api/user-data/import`. Topes por lector: 5000 versículos marcados y 500 entradas de cuaderno.
+
+Al iniciar sesión, lo que quedó guardado en el dispositivo con la versión anterior (`verse-annotations`, `study-notebook`, `last-reading` en `localStorage`) se sube con `/api/user-data/import` sin pisar lo más nuevo de la cuenta, y se borra del dispositivo.
+
+Antes de desplegar: `npm run db:migrate`.
 
 ## `logosagent-api` (otro repositorio)
 

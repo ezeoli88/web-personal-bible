@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
+import { clearUserData, loadUserData } from "../userData/userData";
 import { meQueryOptions, type Me } from "./useMe";
 
 export interface AuthState {
@@ -25,6 +26,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role: me?.authenticated ? me.role ?? null : undefined,
     me,
   };
+  // Marks, notebook and reading place belong to readers with access.
+  const dataOwner = status === "authenticated" && value.role ? value.email : null;
+  useEffect(() => {
+    if (dataOwner) void loadUserData(dataOwner);
+    else if (status !== "loading") clearUserData();
+  }, [dataOwner, status]);
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

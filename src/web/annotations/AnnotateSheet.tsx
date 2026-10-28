@@ -9,6 +9,9 @@ import {
   type AnnotationPatch,
   type AnnotationTarget,
 } from "./annotations";
+import { LoginPrompt } from "../auth/LoginPrompt";
+import type { PanelAccess } from "../hooks/useBibleAiPanel";
+import { useUserDataState } from "../userData/userData";
 import styles from "./AnnotateSheet.module.css";
 
 interface Props {
@@ -17,12 +20,16 @@ interface Props {
   reference: string;
   /** `note` opens with the note field focused. */
   focus?: "note";
+  /** Marks are saved in the reader's account: signed out, the sheet asks to sign in. */
+  access: PanelAccess;
+  onLogin: () => void;
   /** Called after a change is saved, so the reader can clear its selection. */
   onDone: () => void;
   onClose: () => void;
 }
 
-export function AnnotateSheet({ targets, reference, focus, onDone, onClose }: Props) {
+export function AnnotateSheet({ targets, reference, focus, access, onLogin, onDone, onClose }: Props) {
+  const userData = useUserDataState();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const annotations = useAnnotations();
@@ -73,6 +80,20 @@ export function AnnotateSheet({ targets, reference, focus, onDone, onClose }: Pr
         <button type="button" className={styles.close} onClick={onClose} aria-label="Cerrar">✕</button>
       </div>
 
+      {userData.status !== "ready" ? (
+        !open ? null : access === "anonymous" ? (
+          <LoginPrompt onLogin={onLogin} message="Iniciá sesión para guardar subrayados, marcadores y notas en tu cuenta." />
+        ) : (
+          <p className={styles.hint} role="status">
+            {access === "denied"
+              ? "Tu correo no tiene acceso para guardar marcas. Pedíselo al administrador."
+              : userData.status === "error"
+                ? "No se pudieron cargar tus marcas. Probá de nuevo en un momento."
+                : "Cargando tus marcas…"}
+          </p>
+        )
+      ) : (
+      <>
       <fieldset className={styles.group}>
         <legend className={styles.legend}>Subrayar</legend>
         <div className={styles.colors}>
@@ -141,6 +162,8 @@ export function AnnotateSheet({ targets, reference, focus, onDone, onClose }: Pr
           <p className={styles.hint}>Para escribir una nota, elegí un solo versículo.</p>
         )}
       </div>
+      </>
+      )}
     </dialog>
   );
 }

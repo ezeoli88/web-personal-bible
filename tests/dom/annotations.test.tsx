@@ -4,22 +4,29 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createAppQueryClient } from "../../src/core/providers/QueryProvider";
 import { createAppRouter } from "../../src/router";
+import { clearUserData } from "../../src/web/userData/userData";
+import { fakeUserDataApi, signedInMe } from "../setup/fakeUserData";
 
 afterEach(() => {
+  clearUserData();
   vi.unstubAllGlobals();
   delete (Element.prototype as Partial<Element>).scrollIntoView;
 });
 
-function stubBolls() {
-  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo) => {
+function stubBolls(signedIn = true) {
+  const api = fakeUserDataApi();
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo, init?: RequestInit) => {
     const url = String(input);
-    if (url.includes("/api/me")) return Response.json({ authenticated: false });
+    if (url.includes("/api/me")) return signedIn ? signedInMe() : Response.json({ authenticated: false });
+    const own = api.handle(input, init);
+    if (own) return own;
     if (url.includes("bolls.life")) {
       return Response.json([1, 2, 3].map((number) => ({ pk: number, verse: number, text: `Versículo ${number} [1]` })));
     }
     return new Response("no", { status: 404 });
   }));
   Element.prototype.scrollIntoView = vi.fn();
+  return api;
 }
 
 function verseRow(number: number): HTMLElement {
@@ -28,12 +35,13 @@ function verseRow(number: number): HTMLElement {
 
 describe("highlights, bookmarks and notes", () => {
   it("marks verses from the reader and lists them in Guardados", async () => {
-    stubBolls();
+    const api = stubBolls();
     const user = userEvent.setup();
     const router = createAppRouter(createAppQueryClient());
     render(<RouterProvider router={router} />);
     await router.navigate({ to: "/$book/$chapter", params: { book: "juan", chapter: "3" }, search: { v: undefined } });
     await screen.findByText("Versículo 2");
+    await waitFor(() => expect(api.requests[0]).toMatchObject({ method: "GET", path: "/api/user-data" }));
 
     await user.click(verseRow(1));
     await user.click(verseRow(2));
@@ -71,8 +79,31 @@ describe("highlights, bookmarks and notes", () => {
     await user.click(screen.getByRole("button", { name: "Quitar nota de Juan 3:3" }));
     expect(screen.getByText("Todavía no escribiste notas.")).toBeInTheDocument();
 
+    await waitFor(() => expect(api.data.annotations).toHaveLength(2));
+    expect(api.data.annotations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ verse: 2, highlight: "yellow", bookmarked: true }),
+    ]));
+
     await user.click(screen.getByRole("tab", { name: /Marcadores/ }));
     await user.click(screen.getByText("Juan 3:2"));
     await waitFor(() => expect(router.state.resolvedLocation?.href).toBe("/juan/3?v=2"));
   }, 15_000);
+
+  it("asks to sign in before marking and in Guardados", async () => {
+    const api = stubBolls(false);
+    const user = userEvent.setup();
+    const router = createAppRouter(createAppQueryClient());
+    render(<RouterProvider router={router} />);
+    await router.navigate({ to: "/$book/$chapter", params: { book: "juan", chapter: "3" }, search: { v: undefined } });
+    await screen.findByText("Versículo 2");
+
+    await user.click(verseRow(1));
+    await user.click(screen.getByRole("button", { name: "Marcar" }));
+    expect(screen.getByText("Iniciá sesión para guardar subrayados, marcadores y notas en tu cuenta.")).toBeInTheDocument();
+    expect(screen.queryByTestId("highlight-yellow")).not.toBeInTheDocument();
+
+    await router.navigate({ to: "/guardados" });
+    expect(await screen.findByText(/Iniciá sesión para ver tus marcadores/)).toBeInTheDocument();
+    expect(api.requests).toEqual([]);
+  });
 });

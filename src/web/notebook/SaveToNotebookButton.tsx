@@ -21,8 +21,9 @@ export function SaveToNotebookButton({ passage, kind, title, content, className 
       className={className}
       disabled={saved || !content.trim()}
       onClick={() => {
-        addNotebookEntry({ kind, title, content, passage });
-        notify("Guardado en el cuaderno", "Lo encontrás en Guardados → Cuaderno.");
+        if (addNotebookEntry({ kind, title, content, passage })) {
+          notify("Guardado en el cuaderno", "Lo encontrás en Guardados → Cuaderno.");
+        }
       }}
     >
       {saved ? "En el cuaderno ✓" : "Guardar en el cuaderno"}

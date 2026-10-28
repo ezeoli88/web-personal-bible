@@ -1,6 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createAppQueryClient } from "../../src/core/providers/QueryProvider";
@@ -8,6 +8,8 @@ import type { BiblePassage } from "../../src/core/types/ai";
 import { createAppRouter } from "../../src/router";
 import { BibleAiPanel } from "../../src/web/components/BibleAiPanel";
 import { addNotebookEntry } from "../../src/web/notebook/notebook";
+import { getUserDataState } from "../../src/web/userData/userData";
+import { clearUserData, fakeUserDataApi, signedInMe, signInWith } from "../setup/fakeUserData";
 
 const passage: BiblePassage = {
   reference: "Juan 3:16",
@@ -16,14 +18,16 @@ const passage: BiblePassage = {
 };
 
 afterEach(() => {
+  clearUserData();
   vi.unstubAllGlobals();
-  localStorage.clear();
 });
 
 describe("Cuaderno de estudio", () => {
   it("keeps an answer from the chat", async () => {
     const user = userEvent.setup();
-    vi.stubGlobal("fetch", vi.fn(async () => new Response([
+    const api = fakeUserDataApi();
+    await signInWith(api);
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo, init?: RequestInit) => api.handle(input, init) ?? new Response([
       'data: {"type":"start","mode":"ask"}\n\n',
       'data: {"type":"end","mode":"ask","fullContent":"Dios amó al mundo [16]."}\n\n',
     ].join(""), { headers: { "content-type": "text/event-stream" } })));
@@ -38,20 +42,22 @@ describe("Cuaderno de estudio", () => {
     await user.click(await screen.findByRole("button", { name: "Guardar en el cuaderno" }));
 
     expect(screen.getByRole("button", { name: "En el cuaderno ✓" })).toBeDisabled();
-    const saved = JSON.parse(localStorage.getItem("study-notebook")!);
-    expect(saved).toMatchObject([{ kind: "ask", title: "¿A quién amó Dios?", content: "Dios amó al mundo [16].", reference: "Juan 3:16" }]);
+    await waitFor(() => expect(api.data.notebook).toHaveLength(1));
+    expect(api.data.notebook).toMatchObject([{ kind: "ask", title: "¿A quién amó Dios?", content: "Dios amó al mundo [16].", reference: "Juan 3:16" }]);
   });
 
   it("lists entries in Guardados, filters by tag and removes them", async () => {
-    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo) => (
-      String(input).includes("/api/me") ? Response.json({ authenticated: false }) : new Response("no", { status: 404 })
+    const api = fakeUserDataApi();
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo, init?: RequestInit) => (
+      String(input).includes("/api/me") ? signedInMe() : api.handle(input, init) ?? new Response("no", { status: 404 })
     )));
-    addNotebookEntry({ kind: "ai", title: "Reflexión", content: "El amor de Dios **da**.", passage }, 1);
-    addNotebookEntry({ kind: "word", title: "Palabra: amó", content: "Amor que elige.", passage }, 2);
     const user = userEvent.setup();
     const router = createAppRouter(createAppQueryClient());
     render(<RouterProvider router={router} />);
     await router.navigate({ to: "/guardados" });
+    await waitFor(() => expect(getUserDataState().status).toBe("ready"));
+    addNotebookEntry({ kind: "ai", title: "Reflexión", content: "El amor de Dios **da**.", passage }, 1);
+    addNotebookEntry({ kind: "word", title: "Palabra: amó", content: "Amor que elige.", passage }, 2);
 
     await user.click(await screen.findByRole("tab", { name: /Cuaderno/ }));
     const notebook = screen.getByTestId("notebook");
@@ -69,5 +75,7 @@ describe("Cuaderno de estudio", () => {
     expect(within(notebook).getByText("Reflexión")).toBeInTheDocument();
     await user.click(within(notebook).getByRole("button", { name: "Quitar «Reflexión» del cuaderno" }));
     expect(await screen.findByText("Tu cuaderno está vacío.")).toBeInTheDocument();
+    await waitFor(() => expect(api.data.notebook).toEqual([]));
+    expect(api.requests.map(({ method }) => method)).toEqual(["GET", "POST", "POST", "PATCH", "DELETE", "DELETE"]);
   });
 });

@@ -2,10 +2,11 @@ import { useEffect } from "react";
 import { bookFromSlug } from "../../core/lib/bookSlugs";
 import type { Verse } from "../../core/types/bible";
 import { isSupportedTranslation, type BibleTranslation } from "../../core/types/translation";
-import { readStorage, writeStorage } from "../../platform/storage";
+import { getUserDataState, sendChange, updateUserData, useUserDataState } from "../userData/userData";
 
-const STORAGE_KEY = "last-reading";
 const SAVE_DELAY_MS = 400;
+/** Scrolling moves the place often; the server gets it once it settles. */
+const SEND_DELAY_MS = 3000;
 
 export interface LastReading {
   slug: string;
@@ -21,23 +22,35 @@ function isPositiveInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value > 0;
 }
 
-export function readLastReading(): LastReading | null {
-  const raw = readStorage(STORAGE_KEY);
-  if (!raw) return null;
-  try {
-    const value = JSON.parse(raw) as Partial<StoredReading> | null;
-    const book = typeof value?.slug === "string" ? bookFromSlug(value.slug) : null;
-    if (!value || !book || !isSupportedTranslation(value.translation)) return null;
-    if (!isPositiveInteger(value.chapter) || value.chapter > book.chapters || !isPositiveInteger(value.verse)) return null;
-    return { slug: value.slug!, bookName: book.name, chapter: value.chapter, verse: value.verse, translation: value.translation };
-  } catch {
-    return null;
-  }
+function toLastReading(raw: unknown): LastReading | null {
+  const value = raw as Partial<StoredReading> | null;
+  const book = typeof value?.slug === "string" ? bookFromSlug(value.slug) : null;
+  if (!value || !book || !isSupportedTranslation(value.translation)) return null;
+  if (!isPositiveInteger(value.chapter) || value.chapter > book.chapters || !isPositiveInteger(value.verse)) return null;
+  return { slug: value.slug!, bookName: book.name, chapter: value.chapter, verse: value.verse, translation: value.translation };
 }
 
+/** Where the signed-in reader left off, from their account; null when signed out. */
+export function readLastReading(): LastReading | null {
+  return toLastReading(getUserDataState().data.lastReading);
+}
+
+export function useLastReading(): LastReading | null {
+  return toLastReading(useUserDataState().data.lastReading);
+}
+
+let sendTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Keeps the place in the reader's account. Does nothing while signed out. */
 export function writeLastReading(reading: StoredReading): void {
+  if (getUserDataState().status !== "ready") return;
   const { slug, chapter, verse, translation } = reading;
-  writeStorage(STORAGE_KEY, JSON.stringify({ slug, chapter, verse, translation }));
+  const current = getUserDataState().data.lastReading as Partial<StoredReading> | null;
+  if (current?.slug === slug && current.chapter === chapter && current.verse === verse && current.translation === translation) return;
+  const next = { slug, chapter, verse, translation };
+  updateUserData((data) => ({ ...data, lastReading: next }));
+  clearTimeout(sendTimer);
+  sendTimer = setTimeout(() => void sendChange("PUT", "/api/user-data/reading", next), SEND_DELAY_MS);
 }
 
 /** The verse under the middle of the screen, or null over a gap, the action bar or a dialog. */

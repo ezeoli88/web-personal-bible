@@ -14,6 +14,9 @@ import {
 } from "../annotations/annotations";
 import { NotebookView } from "../notebook/NotebookView";
 import { useNotebook } from "../notebook/notebook";
+import { useAuth } from "../auth/AuthProvider";
+import { LoginPrompt } from "../auth/LoginPrompt";
+import { useUserDataState } from "../userData/userData";
 import styles from "./SavedPage.module.css";
 
 type AnnotationTab = "bookmarks" | "highlights" | "notes";
@@ -37,6 +40,33 @@ function belongsTo(tab: Tab, annotation: VerseAnnotation): boolean {
 }
 
 export function SavedPage() {
+  const auth = useAuth();
+  const userData = useUserDataState();
+  if (userData.status !== "ready") {
+    return (
+      <section data-testid="saved-page">
+        <h2 className={styles.title}>Guardados</h2>
+        {auth.status === "anonymous" ? (
+          <LoginPrompt
+            message="Iniciá sesión para ver tus marcadores, subrayados, notas y tu cuaderno de estudio."
+            onLogin={() => window.location.assign("/auth/login?returnTo=%2Fguardados")}
+          />
+        ) : (
+          <p className={styles.intro} role="status">
+            {auth.status === "authenticated" && !auth.role
+              ? "Tu correo no tiene acceso para guardar marcas. Pedíselo al administrador."
+              : userData.status === "error"
+                ? "No se pudieron cargar tus datos. Probá de nuevo en un momento."
+                : "Cargando lo que guardaste…"}
+          </p>
+        )}
+      </section>
+    );
+  }
+  return <SavedContent />;
+}
+
+function SavedContent() {
   const annotations = useAnnotations();
   const { translation: current } = useBibleRepository();
   const notebook = useNotebook();
@@ -55,7 +85,7 @@ export function SavedPage() {
     <section data-testid="saved-page">
       <h2 className={styles.title}>Guardados</h2>
       <p className={styles.intro}>
-        Tus marcadores, subrayados, notas y el cuaderno de estudio se guardan en este dispositivo.
+        Tus marcadores, subrayados, notas y el cuaderno de estudio se guardan en tu cuenta.
       </p>
       <div className={styles.tabs} role="tablist" aria-label="Tipo de marca">
         {TABS.map(({ value, label }) => (
