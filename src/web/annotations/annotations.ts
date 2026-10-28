@@ -1,8 +1,5 @@
-import { useSyncExternalStore } from "react";
 import { isSupportedTranslation, type BibleTranslation } from "../../core/types/translation";
-import { readStorage, writeStorage } from "../../platform/storage";
-
-const STORAGE_KEY = "verse-annotations";
+import { getUserDataState, sendChange, updateUserData, useUserDataState } from "../userData/userData";
 
 export const HIGHLIGHT_COLORS = ["yellow", "green", "blue", "pink", "orange"] as const;
 export type HighlightColor = (typeof HIGHLIGHT_COLORS)[number];
@@ -81,58 +78,40 @@ function isEmpty(annotation: VerseAnnotation): boolean {
   return !annotation.highlight && !annotation.bookmarked && !annotation.note;
 }
 
-function parse(raw: string | null): AnnotationMap {
-  if (!raw) return {};
-  try {
-    const list = JSON.parse(raw) as unknown;
-    if (!Array.isArray(list)) return {};
-    const map: Record<string, VerseAnnotation> = {};
-    for (const entry of list) {
-      const annotation = sanitize(entry);
-      if (annotation) map[annotationKey(annotation)] = annotation;
-    }
-    return map;
-  } catch {
-    return {};
+function toMap(list: readonly unknown[]): AnnotationMap {
+  const map: Record<string, VerseAnnotation> = {};
+  for (const entry of list) {
+    const annotation = sanitize(entry);
+    if (annotation) map[annotationKey(annotation)] = annotation;
   }
+  return map;
 }
 
-let cache: { raw: string | null; map: AnnotationMap } | null = null;
-const listeners = new Set<() => void>();
+// The map is rebuilt only when the server copy changes, so React sees a stable snapshot.
+let cache: { list: readonly unknown[]; map: AnnotationMap } | null = null;
 
-function snapshot(): AnnotationMap {
-  const raw = readStorage(STORAGE_KEY);
-  if (!cache || cache.raw !== raw) cache = { raw, map: parse(raw) };
+function mapOf(list: readonly unknown[]): AnnotationMap {
+  if (!cache || cache.list !== list) cache = { list, map: toMap(list) };
   return cache.map;
 }
 
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  // Another tab saving its marks fires `storage` here.
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === null || event.key === STORAGE_KEY) listener();
-  };
-  window.addEventListener("storage", onStorage);
-  return () => {
-    listeners.delete(listener);
-    window.removeEventListener("storage", onStorage);
-  };
-}
-
-function save(map: AnnotationMap) {
-  const raw = JSON.stringify(Object.values(map));
-  writeStorage(STORAGE_KEY, raw);
-  cache = { raw, map };
-  for (const listener of listeners) listener();
+function snapshot(): AnnotationMap {
+  return mapOf(getUserDataState().data.annotations);
 }
 
 export function readAnnotations(): AnnotationMap {
   return snapshot();
 }
 
-/** Applies the same change to every target. A verse left with nothing saved is removed. */
+/**
+ * Applies the same change to every target and saves it in the reader's account.
+ * A verse left with nothing saved is removed. Does nothing while signed out.
+ */
 export function updateAnnotations(targets: AnnotationTarget[], patch: AnnotationPatch, now = Date.now()): void {
+  if (getUserDataState().status !== "ready") return;
   const next: Record<string, VerseAnnotation> = { ...snapshot() };
+  const upsert: VerseAnnotation[] = [];
+  const remove: VerseLocation[] = [];
   for (const target of targets) {
     const key = annotationKey(target);
     const annotation: VerseAnnotation = {
@@ -157,10 +136,18 @@ export function updateAnnotations(targets: AnnotationTarget[], patch: Annotation
       if (note) annotation.note = note;
       else delete annotation.note;
     }
-    if (isEmpty(annotation)) delete next[key];
-    else next[key] = annotation;
+    if (isEmpty(annotation)) {
+      delete next[key];
+      remove.push({ bookNumber: target.bookNumber, chapter: target.chapter, verse: target.verse });
+    } else {
+      next[key] = annotation;
+      upsert.push(annotation);
+    }
   }
-  save(next);
+  const list = Object.values(next);
+  cache = { list, map: next };
+  updateUserData((data) => ({ ...data, annotations: list }));
+  void sendChange("POST", "/api/user-data/annotations", { upsert, remove });
 }
 
 /** Removes one kind of mark from a verse, keeping the others. */
@@ -172,5 +159,5 @@ export function removeAnnotationPart(location: VerseLocation, part: "highlight" 
 }
 
 export function useAnnotations(): AnnotationMap {
-  return useSyncExternalStore(subscribe, snapshot, () => ({}));
+  return mapOf(useUserDataState().data.annotations);
 }

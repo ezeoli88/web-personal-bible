@@ -1,9 +1,6 @@
-import { useSyncExternalStore } from "react";
 import type { BiblePassage } from "../../core/types/ai";
 import { isSupportedTranslation, type BibleTranslation } from "../../core/types/translation";
-import { readStorage, writeStorage } from "../../platform/storage";
-
-const STORAGE_KEY = "study-notebook";
+import { getUserDataState, sendChange, updateUserData, useUserDataState } from "../userData/userData";
 const MAX_TAGS = 8;
 const MAX_TAG_LENGTH = 30;
 
@@ -78,43 +75,22 @@ function sanitize(value: unknown): NotebookEntry | null {
   };
 }
 
-function parse(raw: string | null): readonly NotebookEntry[] {
-  if (!raw) return [];
-  try {
-    const list = JSON.parse(raw) as unknown;
-    if (!Array.isArray(list)) return [];
-    return list.map(sanitize).filter((entry): entry is NotebookEntry => entry !== null);
-  } catch {
-    return [];
+let cache: { list: readonly unknown[]; entries: readonly NotebookEntry[] } | null = null;
+
+function entriesOf(list: readonly unknown[]): readonly NotebookEntry[] {
+  if (!cache || cache.list !== list) {
+    cache = { list, entries: list.map(sanitize).filter((entry): entry is NotebookEntry => entry !== null) };
   }
-}
-
-let cache: { raw: string | null; entries: readonly NotebookEntry[] } | null = null;
-const listeners = new Set<() => void>();
-
-function snapshot(): readonly NotebookEntry[] {
-  const raw = readStorage(STORAGE_KEY);
-  if (!cache || cache.raw !== raw) cache = { raw, entries: parse(raw) };
   return cache.entries;
 }
 
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === null || event.key === STORAGE_KEY) listener();
-  };
-  window.addEventListener("storage", onStorage);
-  return () => {
-    listeners.delete(listener);
-    window.removeEventListener("storage", onStorage);
-  };
+function snapshot(): readonly NotebookEntry[] {
+  return entriesOf(getUserDataState().data.notebook);
 }
 
-function save(entries: readonly NotebookEntry[]) {
-  const raw = JSON.stringify(entries);
-  writeStorage(STORAGE_KEY, raw);
-  cache = { raw, entries };
-  for (const listener of listeners) listener();
+function replace(entries: readonly NotebookEntry[]) {
+  cache = { list: entries, entries };
+  updateUserData((data) => ({ ...data, notebook: entries as unknown[] }));
 }
 
 function newId(): string {
@@ -127,8 +103,12 @@ export function readNotebook(): readonly NotebookEntry[] {
   return snapshot();
 }
 
-/** Saves an entry, newest first. The same content saved twice is kept once. */
-export function addNotebookEntry({ kind, title, content, passage }: NewNotebookEntry, now = Date.now()): NotebookEntry {
+/**
+ * Saves an entry in the reader's account, newest first. The same content saved
+ * twice is kept once. Returns null while signed out.
+ */
+export function addNotebookEntry({ kind, title, content, passage }: NewNotebookEntry, now = Date.now()): NotebookEntry | null {
+  if (getUserDataState().status !== "ready") return null;
   const entries = snapshot();
   const existing = entries.find((entry) => entry.content === content && entry.reference === passage.reference);
   if (existing) return existing;
@@ -143,7 +123,8 @@ export function addNotebookEntry({ kind, title, content, passage }: NewNotebookE
     tags: [],
     createdAt: now,
   };
-  save([entry, ...entries]);
+  replace([entry, ...entries]);
+  void sendChange("POST", "/api/user-data/notebook", entry);
   return entry;
 }
 
@@ -152,16 +133,18 @@ export function isInNotebook(content: string, reference: string): boolean {
 }
 
 export function removeNotebookEntry(id: string): void {
-  save(snapshot().filter((entry) => entry.id !== id));
+  replace(snapshot().filter((entry) => entry.id !== id));
+  void sendChange("DELETE", `/api/user-data/notebook/${encodeURIComponent(id)}`);
 }
 
 export function setNotebookTags(id: string, tags: string[]): void {
   const clean = [...new Set(tags.map(normalizeTag).filter(Boolean))].slice(0, MAX_TAGS);
-  save(snapshot().map((entry) => (entry.id === id ? { ...entry, tags: clean } : entry)));
+  replace(snapshot().map((entry) => (entry.id === id ? { ...entry, tags: clean } : entry)));
+  void sendChange("PATCH", `/api/user-data/notebook/${encodeURIComponent(id)}`, { tags: clean });
 }
 
 export function useNotebook(): readonly NotebookEntry[] {
-  return useSyncExternalStore(subscribe, snapshot, () => []);
+  return entriesOf(useUserDataState().data.notebook);
 }
 
 /** The notebook as Markdown, to download or paste elsewhere. */

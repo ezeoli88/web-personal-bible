@@ -6,6 +6,7 @@ import { registerAdminRoutes } from "./routes/admin";
 import { registerAiProxy } from "./routes/aiProxy";
 import { registerAuthRoutes } from "./routes/auth";
 import { registerMeRoute } from "./routes/me";
+import { registerUserDataRoutes } from "./routes/userData";
 
 export type { AppDeps };
 
@@ -16,6 +17,7 @@ export function createApp(deps: AppDeps = {}): Hono<AppEnv> {
   registerMeRoute(app);
   registerAiProxy(app, deps);
   registerAdminRoutes(app, deps);
+  registerUserDataRoutes(app);
 
   app.notFound((c) => {
     if (c.req.path.startsWith("/api/") || c.req.path.startsWith("/auth/")) {

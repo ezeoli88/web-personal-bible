@@ -1,11 +1,10 @@
-import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useBibleRepository } from "../../core/hooks/DatabaseProvider";
-import { readLastReading } from "./lastReading";
+import { useLastReading } from "./lastReading";
 import styles from "./ContinueReading.module.css";
 
 export function ContinueReading() {
-  const [last] = useState(readLastReading);
+  const last = useLastReading();
   const { translation } = useBibleRepository();
   if (!last) return null;
   return (

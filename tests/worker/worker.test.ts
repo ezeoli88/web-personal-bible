@@ -467,6 +467,74 @@ describe("AI proxy", () => {
     expect(await adminMe.json()).toMatchObject({ role: "admin", aiQuota: null });
   });
 
+  it("keeps each reader's marks, notebook and reading place in their account", async () => {
+    const email = nextEmail("data");
+    const cookie = await asUser(email);
+    const send = (method: string, path: string, body?: unknown, who = cookie) => call(createApp(), `${HOST}${path}`, {
+      method,
+      headers: sameOriginHeaders(`${HOST}${path}`, { cookie: who, "content-type": "application/json" }),
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const mark = { bookNumber: 43, chapter: 3, verse: 16, text: "Porque tanto amó Dios", translation: "NTV", highlight: "yellow", updatedAt: 10 };
+
+    expect((await send("POST", "/api/user-data/annotations", { upsert: [mark] })).status).toBe(200);
+    expect((await send("POST", "/api/user-data/annotations", { upsert: [{ ...mark, highlight: "red" }] })).status).toBe(400);
+    expect((await send("POST", "/api/user-data/notebook", {
+      id: "entry-0001", kind: "ask", title: "¿Quién?", reference: "Juan 3:16", translation: "NTV",
+      place: { bookNumber: 43, chapter: 3, verses: [16] }, content: "Dios [16].", tags: [], createdAt: 5,
+    })).status).toBe(200);
+    expect(await (await send("PATCH", "/api/user-data/notebook/entry-0001", { tags: ["#Amor", "amor"] })).json()).toMatchObject({ tags: ["amor"] });
+    expect((await send("PUT", "/api/user-data/reading", { slug: "juan", chapter: 3, verse: 16, translation: "NTV" })).status).toBe(200);
+
+    const data = await (await call(createApp(), `${HOST}/api/user-data`, { headers: { cookie } })).json();
+    expect(data).toEqual({
+      annotations: [{ ...mark }],
+      notebook: [expect.objectContaining({ id: "entry-0001", tags: ["amor"], place: { bookNumber: 43, chapter: 3, verses: [16] } })],
+      lastReading: { slug: "juan", chapter: 3, verse: 16, translation: "NTV" },
+    });
+
+    // Another reader sees nothing of it.
+    const other = await asUser(nextEmail("other"));
+    expect(await (await call(createApp(), `${HOST}/api/user-data`, { headers: { cookie: other } })).json())
+      .toEqual({ annotations: [], notebook: [], lastReading: null });
+    expect((await send("DELETE", "/api/user-data/notebook/entry-0001", undefined, other)).status).toBe(200);
+
+    await send("POST", "/api/user-data/annotations", { remove: [{ bookNumber: 43, chapter: 3, verse: 16 }] });
+    await send("DELETE", "/api/user-data/notebook/entry-0001");
+    const after = await (await call(createApp(), `${HOST}/api/user-data`, { headers: { cookie } })).json();
+    expect(after).toMatchObject({ annotations: [], notebook: [] });
+  });
+
+  it("imports what was on the device without overwriting newer data", async () => {
+    const cookie = await asUser(nextEmail("import"));
+    const url = `${HOST}/api/user-data/import`;
+    const post = (body: unknown) => call(createApp(), url, {
+      method: "POST",
+      headers: sameOriginHeaders(url, { cookie, "content-type": "application/json" }),
+      body: JSON.stringify(body),
+    });
+    const base = { bookNumber: 1, chapter: 1, verse: 1, text: "En el principio", translation: "RV1960" };
+    await post({ annotations: [{ ...base, bookmarked: true, updatedAt: 20 }], lastReading: { slug: "genesis", chapter: 1, verse: 1, translation: "RV1960" } });
+    const merged = await (await post({
+      annotations: [{ ...base, note: "vieja", updatedAt: 5 }, { ...base, verse: 2, highlight: "green", updatedAt: 1 }, { bad: true }],
+      notebook: [{ id: "legacy-0001", kind: "ai", title: "Reflexión", reference: "Génesis 1:1", translation: "RV1960", place: null, content: "Dios crea.", tags: ["inicio"], createdAt: 1 }],
+      lastReading: { slug: "juan", chapter: 1, verse: 1, translation: "NTV" },
+    })).json() as { annotations: Array<Record<string, unknown>>; notebook: unknown[]; lastReading: unknown };
+    expect(merged.annotations).toHaveLength(2);
+    expect(merged.annotations.find((item) => item.verse === 1)).toMatchObject({ bookmarked: true, updatedAt: 20 });
+    expect(merged.annotations.find((item) => item.verse === 1)).not.toHaveProperty("note");
+    expect(merged.notebook).toHaveLength(1);
+    expect(merged.lastReading).toMatchObject({ slug: "genesis" });
+  });
+
+  it("keeps user data behind sign-in and access", async () => {
+    expect((await call(createApp(), `${HOST}/api/user-data`)).status).toBe(401);
+    const email = nextEmail("off");
+    await allow(email, false);
+    const denied = await call(createApp(), `${HOST}/api/user-data`, { headers: { cookie: await sessionCookie(email) } });
+    expect(denied.status).toBe(403);
+  });
+
   it("passes the upstream status through", async () => {
     const cookie = await asUser(nextEmail("status"));
     const url = `${HOST}/api/bible-ai/stream`;

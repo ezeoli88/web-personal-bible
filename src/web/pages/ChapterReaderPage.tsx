@@ -331,6 +331,8 @@ export function ChapterReaderPage({
           ? formatVerseReference(bookName, chapterNumber, annotating.verses.map((verse) => verse.number))
           : ""}
         focus={annotating?.focus}
+        access={access}
+        onLogin={handleLogin}
         onDone={() => {
           setAnnotating(null);
           selection.clearSelection();
