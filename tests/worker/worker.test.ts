@@ -424,7 +424,7 @@ describe("AI proxy", () => {
     expect(response.headers.get("retry-after")).toBe("3");
   });
 
-  it("counts answers against the monthly quota and stops at the limit", async () => {
+  it("counts model answers against the monthly quota and stops at the limit", async () => {
     const email = nextEmail("quota");
     const cookie = await asUser(email);
     const url = `${HOST}/api/bible-ai/stream`;
@@ -441,7 +441,12 @@ describe("AI proxy", () => {
     const me = await call(createApp(), `${HOST}/api/me`, { headers: { cookie } });
     expect(await me.json()).toMatchObject({ aiQuota: { limit: AI_MONTHLY_LIMIT, used: AI_MONTHLY_LIMIT - 2, remaining: 2 } });
 
-    const first = await send(new Response("data: ok\n\n"));
+    const cached = await send(new Response("data: ok\n\n", { headers: { "x-ai-cache": "hit" } }));
+    expect(cached.headers.get("x-ai-quota-remaining")).toBe("2");
+    const afterCache = await call(createApp(), `${HOST}/api/me`, { headers: { cookie } });
+    expect(await afterCache.json()).toMatchObject({ aiQuota: { used: AI_MONTHLY_LIMIT - 2, remaining: 2 } });
+
+    const first = await send(new Response("data: ok\n\n", { headers: { "x-ai-cache": "miss" } }));
     expect(first.headers.get("x-ai-quota-remaining")).toBe("1");
     expect((await send(new Response("data: ok\n\n"))).headers.get("x-ai-quota-remaining")).toBe("0");
     const blocked = await send(new Response("data: ok\n\n"));

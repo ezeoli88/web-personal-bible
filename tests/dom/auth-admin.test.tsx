@@ -18,9 +18,9 @@ const passage: BiblePassage = {
 
 function sse(text: string): Response {
   const body = [
-    'data: {"type":"start","mode":"reflection"}\n\n',
+    'data: {"type":"start","mode":"group"}\n\n',
     `data: ${JSON.stringify({ type: "text", content: text })}\n\n`,
-    `data: ${JSON.stringify({ type: "end", mode: "reflection", fullContent: text })}\n\n`,
+    `data: ${JSON.stringify({ type: "end", mode: "group", fullContent: text })}\n\n`,
   ].join("");
   return new Response(body, { headers: { "content-type": "text/event-stream" } });
 }
@@ -63,7 +63,7 @@ describe("BibleAiPanel", () => {
     expect(screen.getByTestId("not-allowed")).toHaveTextContent("Tu correo no tiene acceso a la IA. Pedíselo al administrador.");
   });
 
-  it("shows the menu without asking the server and streams a reflection", async () => {
+  it("shows the menu without asking the server and streams a group guide", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn(async () => sse("Paz"));
     vi.stubGlobal("fetch", fetchMock);
@@ -73,10 +73,11 @@ describe("BibleAiPanel", () => {
       </QueryClientProvider>,
     );
     expect(screen.getAllByTestId(/^ai-mode-/).map((option) => option.dataset.testid)).toEqual([
-      "ai-mode-ask", "ai-mode-reflection", "ai-mode-history", "ai-mode-words", "ai-mode-structure", "ai-mode-group",
+      "ai-mode-ask", "ai-mode-group",
     ]);
     expect(fetchMock).not.toHaveBeenCalled();
-    await user.click(screen.getByTestId("ai-mode-reflection"));
+    await user.click(screen.getByTestId("ai-mode-group"));
+    await user.click(screen.getByRole("button", { name: /45 minutos/ }));
     expect(await screen.findByText("Paz")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copiar" })).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -100,7 +101,8 @@ describe("BibleAiPanel", () => {
         <BibleAiPanel open passage={passage} access="allowed" onClose={vi.fn()} onLogin={vi.fn()} />
       </QueryClientProvider>,
     );
-    await user.click(screen.getByTestId("ai-mode-reflection"));
+    await user.click(screen.getByTestId("ai-mode-group"));
+    await user.click(screen.getByRole("button", { name: /45 minutos/ }));
     expect(await screen.findByTestId("login-prompt")).toBeInTheDocument();
   });
 
@@ -116,11 +118,12 @@ describe("BibleAiPanel", () => {
         <BibleAiPanel open passage={passage} access="allowed" onClose={vi.fn()} onLogin={vi.fn()} />
       </QueryClientProvider>,
     );
-    await user.click(await screen.findByTestId("ai-mode-reflection"));
+    await user.click(await screen.findByTestId("ai-mode-group"));
+    await user.click(screen.getByRole("button", { name: /45 minutos/ }));
     await waitFor(() => expect(stream).toBeDefined());
-    stream!.send({ type: "start", mode: "reflection" });
+    stream!.send({ type: "start", mode: "group" });
     expect(await screen.findByTestId("passage-reading")).toHaveTextContent("Porque de tal manera amó Dios al mundo.");
-    expect(screen.getByText("Consultando sobre reflexión...")).toBeInTheDocument();
+    expect(screen.getByText("Consultando sobre guía para grupo pequeño...")).toBeInTheDocument();
 
     stream!.send({ type: "text", content: "Texto parcial" });
     expect(await screen.findByText("Texto parcial")).toBeInTheDocument();
