@@ -126,4 +126,57 @@ describe("Preguntale al pasaje", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("La pregunta es demasiado larga"));
     expect(screen.getByLabelText("Tu pregunta")).toBeEnabled();
   });
+
+  it("answers the shortcuts without using questions and sends them with the next question", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(init.body as string) as { mode: string; step?: string };
+      if (body.mode === "history") return sse("Juan escribe para creyentes de Asia.");
+      if (body.mode === "words" && body.step === "identify") {
+        return Response.json({
+          type: "words-identification",
+          mode: "words",
+          step: "identify",
+          words: [{ spanish: "mundo", original: "κόσμον", transliteration: "kosmon", language: "greek", hint: "el mundo creado" }],
+          maxSelectable: 3,
+        });
+      }
+      if (body.mode === "words") {
+        return new Response(
+          'data: {"type":"end","mode":"words","step":"define","fullContent":"Kosmos es el mundo habitado."}\n\n',
+          { headers: { "content-type": "text/event-stream" } },
+        );
+      }
+      return sse("Lo amó entero [16].");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderPanel();
+
+    await user.click(screen.getByTestId("ai-mode-ask"));
+    await user.click(screen.getByTestId("study-history"));
+    const conversation = screen.getByTestId("ask-conversation");
+    expect(await within(conversation).findByText("Juan escribe para creyentes de Asia.")).toBeInTheDocument();
+    expect(screen.queryByTestId("study-history")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("study-words"));
+    const words = await screen.findByTestId("chat-key-words");
+    expect(within(conversation).queryByText("Kosmos es el mundo habitado.")).not.toBeInTheDocument();
+    await user.click(within(words).getByText("mundo"));
+    expect(await within(conversation).findByText("Kosmos es el mundo habitado.")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Tu pregunta"), "¿Qué mundo?");
+    await user.click(screen.getByRole("button", { name: "Enviar" }));
+    expect(await within(conversation).findByText("Lo amó entero [16].")).toBeInTheDocument();
+    const question = JSON.parse(fetchMock.mock.calls.at(-1)![1].body as string);
+    expect(question).toMatchObject({
+      mode: "ask",
+      question: "¿Qué mundo?",
+      history: [],
+      studies: [
+        { kind: "history", content: "Juan escribe para creyentes de Asia." },
+        { kind: "words", content: "«mundo»: Kosmos es el mundo habitado." },
+      ],
+    });
+    expect(screen.getByText("Te quedan 2 preguntas sobre este pasaje.")).toBeInTheDocument();
+  });
 });

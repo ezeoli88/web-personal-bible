@@ -22,6 +22,15 @@ export interface ChatTurn {
   content: string;
 }
 
+/** Shortcuts inside the passage chat; their answers go with later questions. */
+export type StudyKind = "history" | "structure" | "words";
+
+/** What a shortcut already showed the reader. */
+export interface StudyNote {
+  kind: StudyKind;
+  content: string;
+}
+
 export interface AIMenuOption {
   id: AIMode;
   label: string;
@@ -213,11 +222,7 @@ export const AI_MENU: AIMenuResponse = {
   type: "menu",
   title: "¿Qué te gustaría hacer con este pasaje?",
   options: [
-    { id: "ask", label: "Preguntale al pasaje", hint: "Hacé tus preguntas y seguí la conversación" },
-    { id: "reflection", label: "Reflexión breve", hint: "Idea + aplicación + pregunta" },
-    { id: "history", label: "Contexto histórico", hint: "2–4 puntos culturales/históricos" },
-    { id: "words", label: "Palabras clave (hebreo/griego)", hint: "Palabras por versículo y sus significados" },
-    { id: "structure", label: "Estructura / idea central", hint: "Cómo se organiza el argumento" },
+    { id: "ask", label: "Preguntale al pasaje", hint: "Contexto, palabras clave, estructura y tus preguntas" },
     { id: "group", label: "Guía para grupo pequeño", hint: "Preguntas y tiempos para un encuentro" },
   ],
   footer: "Elegí una opción para continuar.",

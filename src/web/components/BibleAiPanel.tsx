@@ -4,13 +4,11 @@ import { GROUP_DURATIONS, type BiblePassage } from "../../core/types/ai";
 import type { AiQuota } from "../auth/useMe";
 import { LoginPrompt } from "../auth/LoginPrompt";
 import { SaveToNotebookButton } from "../notebook/SaveToNotebookButton";
-import { WordStudyCard } from "../wordStudy/WordStudyCard";
 import { AskPassageChat } from "./AskPassageChat";
 import { useBibleAiPanel, type PanelAccess } from "../hooks/useBibleAiPanel";
 import { MarkdownText } from "./MarkdownText";
 import { PassageReading } from "./PassageReading";
 import { StreamingText } from "./StreamingText";
-import { WordList } from "./WordList";
 import styles from "./BibleAiPanel.module.css";
 
 interface Props {
@@ -72,15 +70,15 @@ export function BibleAiPanel({ open, passage, access, quota, onClose, onLogin }:
   useEffect(() => {
     autoScroll.current = true;
     lastScroll.current = 0;
-  }, [panel.viewState, panel.words.step]);
+  }, [panel.viewState]);
 
   useEffect(() => {
     const scroller = scrollerRef.current;
     if (!scroller || !autoScroll.current) return;
-    if ((panel.viewState === "streaming" && panel.response) || (panel.words.step === "defining" && panel.words.definitions)) {
+    if (panel.viewState === "streaming" && panel.response) {
       scroller.scrollTop = scroller.scrollHeight;
     }
-  }, [panel.response, panel.words.definitions, panel.viewState, panel.words.step]);
+  }, [panel.response, panel.viewState]);
 
   function onScroll() {
     const scroller = scrollerRef.current;
@@ -94,12 +92,9 @@ export function BibleAiPanel({ open, passage, access, quota, onClose, onLogin }:
   }
 
   const modeLabel = panel.currentMode ? panel.labels[panel.currentMode] : null;
-  const wordsStep = panel.words.step;
   const modeBusy = panel.viewState === "loading" || panel.viewState === "streaming";
   const waitingFirstText = panel.viewState === "loading" ||
     (panel.viewState === "streaming" && !panel.response && !panel.error);
-  const activeWord = panel.words.activeWord;
-  const activeWordLabel = activeWord ? (activeWord.spanish || activeWord.hint || activeWord.original) : null;
 
   return (
     <dialog
@@ -178,91 +173,7 @@ export function BibleAiPanel({ open, passage, access, quota, onClose, onLogin }:
         ) : null}
 
         {panel.viewState === "ask" && passage ? (
-          <AskPassageChat passage={passage} chat={panel.chat} onBack={panel.backToMenu} />
-        ) : null}
-
-        {panel.viewState === "words" && passage ? (
-          <div className={styles.response}>
-            <div className={styles.modeHeader}>
-              <span aria-hidden="true">{panel.labels.words.emoji}</span>
-              <span>{activeWordLabel ?? panel.labels.words.label}</span>
-            </div>
-            <p role="status" className={styles.visuallyHidden}>{wordsStep === "complete" ? "Respuesta lista" : ""}</p>
-            {wordsStep === "idle" || wordsStep === "identifying" ? (
-              <PassageReading passage={passage} status="Preparando las palabras del pasaje..." />
-            ) : null}
-            {wordsStep === "browsing" ? (
-              <>
-                <WordList
-                  words={panel.words.words}
-                  passageReference={passage.reference}
-                  source={panel.words.source}
-                  onWordPress={(word) => {
-                    autoScroll.current = true;
-                    void panel.words.startDefinition(passage, word);
-                  }}
-                />
-                <div className={styles.actions}>
-                  <button type="button" className={styles.secondary} onClick={panel.backToMenu}>← Volver al menú</button>
-                </div>
-              </>
-            ) : null}
-            {wordsStep === "defining" || wordsStep === "complete" || wordsStep === "error" ? (
-              <>
-                <div
-                  ref={scrollerRef}
-                  className={styles.scroller}
-                  onScroll={onScroll}
-                  aria-busy={wordsStep === "defining" ? true : undefined}
-                >
-                  {wordsStep === "error" && panel.words.error ? (
-                    <p className={styles.error} role="alert">⚠️ {panel.words.error}</p>
-                  ) : wordsStep === "defining" && !panel.words.definitions ? (
-                    <PassageReading
-                      passage={passage}
-                      status={activeWordLabel ? `Buscando el significado de «${activeWordLabel}»...` : "Buscando el significado..."}
-                    />
-                  ) : (
-                    <StreamingText text={panel.words.definitions} isStreaming={wordsStep === "defining"} />
-                  )}
-                  {wordsStep === "complete" && activeWord?.tokenId ? (
-                    <WordStudyCard passage={passage} tokenId={activeWord.tokenId} onNavigate={onClose} />
-                  ) : null}
-                  {panel.words.notes.map((note) => <p key={note} className={styles.note}>• {note}</p>)}
-                </div>
-                <div className={styles.actions}>
-                  <button
-                    type="button"
-                    className={styles.secondary}
-                    onClick={panel.words.words.length > 0 ? panel.words.backToWords : panel.backToMenu}
-                  >
-                    {panel.words.words.length > 0 ? "← Volver a las palabras" : "← Volver al menú"}
-                  </button>
-                  {wordsStep === "complete" && panel.words.definitions ? (
-                    <SaveToNotebookButton
-                      className={styles.secondary}
-                      passage={passage}
-                      kind="word"
-                      title={activeWordLabel ? `Palabra: ${activeWordLabel}` : "Palabra a fondo"}
-                      content={panel.words.definitions}
-                    />
-                  ) : null}
-                  {wordsStep === "error" ? (
-                    <button
-                      type="button"
-                      className={styles.primary}
-                      onClick={() => {
-                        if (panel.words.activeWord) void panel.words.startDefinition(passage, panel.words.activeWord);
-                        else void panel.words.startIdentification(passage);
-                      }}
-                    >
-                      Reintentar
-                    </button>
-                  ) : null}
-                </div>
-              </>
-            ) : null}
-          </div>
+          <AskPassageChat passage={passage} chat={panel.chat} onBack={panel.backToMenu} onNavigate={onClose} />
         ) : null}
 
         {(modeBusy || panel.viewState === "response") && modeLabel && passage ? (

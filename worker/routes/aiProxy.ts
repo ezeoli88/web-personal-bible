@@ -49,7 +49,8 @@ export function registerAiProxy(app: Hono<AppEnv>, deps: AppDeps): void {
     }
 
     // The monthly quota is counted before calling the API and given back if
-    // the API fails or rejects the request, so only answers count.
+    // the API fails, rejects the request or answers from its cache, so only
+    // answers from the model count.
     let quota: AiQuota | null = null;
     if (c.get("role") !== "admin" && usesModel(body)) {
       quota = await consumeAiQuota(c.env.DB, email);
@@ -98,6 +99,11 @@ export function registerAiProxy(app: Hono<AppEnv>, deps: AppDeps): void {
       for (const name of RESPONSE_HEADERS) {
         const value = upstream.headers.get(name);
         if (value) responseHeaders.set(name, value);
+      }
+      // An answer from logosagent-api's cache did not use the model, so it does not use the quota either.
+      if (quota && upstream.status < 400 && upstream.headers.get("x-ai-cache") === "hit") {
+        await refund();
+        quota = { ...quota, used: quota.used - 1, remaining: quota.remaining + 1 };
       }
       if (quota && upstream.status < 400) responseHeaders.set("x-ai-quota-remaining", String(quota.remaining));
       responseHeaders.set("cache-control", "no-cache, no-transform");

@@ -9,6 +9,7 @@ import {
   type APIError,
   type BiblePassage,
   type ChatTurn,
+  type StudyNote,
   type GroupDuration,
   type IdentifiedWord,
   type StreamCallbacks,
@@ -183,18 +184,22 @@ export function askBibleAIStream(
 /** Questions per conversation; logosagent-api rejects a fourth one with QUESTION_LIMIT_REACHED. */
 export const MAX_QUESTIONS_PER_PASSAGE = 3;
 
-/** Asks a free question about the passage, with the earlier turns of the conversation. */
+/**
+ * Asks a free question about the passage, with the earlier turns of the
+ * conversation and what the chat's shortcuts already showed.
+ */
 export function askPassageStream(
   passage: BiblePassage,
   question: string,
   history: ChatTurn[],
   callbacks: StreamCallbacks,
-  options: FetchOptions = {},
+  options: FetchOptions & { studies?: StudyNote[] } = {},
 ): Promise<void> {
+  const { studies, ...fetchOptions } = options;
   return streamRequest(
-    { passage, mode: "ask", question, history },
+    studies?.length ? { passage, mode: "ask", question, history, studies } : { passage, mode: "ask", question, history },
     callbacks,
-    options,
+    fetchOptions,
     "Error de conexión. Verificá tu internet.",
   );
 }

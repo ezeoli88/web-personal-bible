@@ -94,9 +94,9 @@ Si la base todavía no tiene tablas, o hay migraciones nuevas en `migrations/`: 
 
 ## Cupo de IA
 
-Cada lector habilitado tiene 100 consultas de IA por mes calendario (UTC), en todos los modos (`AI_MONTHLY_LIMIT` en `worker/db/aiUsage.ts`). El admin no tiene cupo y el estudio de palabra (`step: "study"`, sale del léxico sin usar el modelo) no lo consume. El proxy cuenta la consulta en la tabla `ai_usage` antes de llamar a `logosagent-api` y la devuelve si la API falla o la rechaza. Sin cupo responde `429 MONTHLY_QUOTA_EXCEEDED`. `/api/me` devuelve `aiQuota` (`limit`, `used`, `remaining`, `resetsAt`) y el panel de IA muestra cuántas quedan.
+Cada lector habilitado tiene 100 consultas de IA por mes calendario (UTC), en todos los modos (`AI_MONTHLY_LIMIT` en `worker/db/aiUsage.ts`). El admin no tiene cupo y el estudio de palabra (`step: "study"`, sale del léxico sin usar el modelo) no lo consume. El proxy cuenta la consulta en la tabla `ai_usage` antes de llamar a `logosagent-api` y la devuelve si la API falla, la rechaza o responde desde su caché (header `x-ai-cache: hit`), porque esa respuesta no usó el modelo. Sin cupo responde `429 MONTHLY_QUOTA_EXCEEDED`. `/api/me` devuelve `aiQuota` (`limit`, `used`, `remaining`, `resetsAt`) y el panel de IA muestra cuántas quedan.
 
-«Preguntale al pasaje» además admite 3 preguntas por conversación, con respuestas breves (lo controla `logosagent-api`).
+«Preguntale al pasaje» además admite 3 preguntas por conversación, con respuestas breves (lo controla `logosagent-api`). Arriba del chat están los atajos Contexto histórico, Palabras clave y Estructura: cada uno usa una consulta del cupo pero no gasta preguntas, y lo que muestran viaja como `studies` con las preguntas siguientes. Palabras clave muestra primero la lista de palabras y, al tocar una, su definición con el estudio a fondo. El menú del panel queda con dos opciones: el chat y la guía para grupo pequeño.
 
 ## Estudio con IA
 
